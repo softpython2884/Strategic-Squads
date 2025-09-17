@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, ArrowLeft, Shield, Swords, Crosshair, FlaskConical, User, ChevronsRight } from 'lucide-react';
-import { teams } from '@/lib/data';
+import { gameState } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,8 @@ export default function TeamSelectionPage() {
     const [teamId, setTeamId] = useState<string | null>(null);
     const [squadType, setSquadType] = useState<string | null>(null);
     const router = useRouter();
+
+    const teams = gameState.getTeams();
 
     const handleNext = () => {
         if (step === 'pseudo' && pseudo.trim().length > 2) {

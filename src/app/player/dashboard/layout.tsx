@@ -5,7 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { teams } from '@/lib/data';
+import { gameState } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Bot, Shield, User } from 'lucide-react';
 
@@ -20,7 +20,8 @@ export default function PlayerDashboardLayout({
   const teamId = searchParams.get('teamId');
   const squadType = searchParams.get('squadType');
 
-  const team = teams[teamId as keyof typeof teams];
+  const teams = gameState.getTeams();
+  const team = teamId ? teams[teamId as keyof typeof teams] : undefined;
   
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
