@@ -4,7 +4,7 @@ import AiBehaviorTester from "./ai-behavior-tester";
 import EventLog from "./event-log";
 import TeamStatsChart from "./team-stats-chart";
 import UnitCompositionChart from "./unit-composition-chart";
-import { gameState } from "@/lib/data";
+import { gameState } from "@/server/game-state";
 
 export default function TechnicalDashboard() {
   return (

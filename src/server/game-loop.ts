@@ -4,7 +4,7 @@
  */
 'use server';
 
-import { gameState } from '@/lib/data';
+import { gameState } from '@/server/game-state';
 
 const TICK_RATE_MS = 250;
 let gameLoopInterval: NodeJS.Timeout | null = null;

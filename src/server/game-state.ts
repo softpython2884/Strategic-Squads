@@ -1,5 +1,5 @@
 
-import type { Unit, Team } from './types';
+import type { Unit, Team } from '@/lib/types';
 
 const teams: { [key: string]: Team } = {
   blue: {

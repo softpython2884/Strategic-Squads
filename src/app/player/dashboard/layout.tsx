@@ -5,7 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { gameState } from '@/lib/data';
+import { gameState } from '@/server/game-state';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Bot, Shield, User } from 'lucide-react';
 

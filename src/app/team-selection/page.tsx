@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, ArrowLeft, Shield, Swords, Crosshair, FlaskConical, User, ChevronsRight } from 'lucide-react';
-import { gameState } from '@/lib/data';
+import { gameState } from '@/server/game-state';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

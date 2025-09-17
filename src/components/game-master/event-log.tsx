@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { runSummarizeGameEvents } from "@/app/actions";
-import { gameState } from "@/lib/data";
+import { gameState } from "@/server/game-state";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Sparkles } from "lucide-react";

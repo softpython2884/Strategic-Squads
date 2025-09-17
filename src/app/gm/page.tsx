@@ -4,7 +4,7 @@ import GameMasterDashboard from '@/components/game-master/dashboard';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { gameState } from '@/lib/data';
+import { gameState } from '@/server/game-state';
 
 export default function GMPage() {
   // Note: This data now comes from our in-memory game state manager

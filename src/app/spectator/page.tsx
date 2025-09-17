@@ -3,7 +3,7 @@ import SpectatorView from "@/components/game-master/spectator-view";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bot } from "lucide-react";
 import Link from "next/link";
-import { gameState } from "@/lib/data";
+import { gameState } from "@/server/game-state";
 
 
 export default function SpectatorPage() {
