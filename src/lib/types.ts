@@ -34,6 +34,7 @@ export type Unit = {
   progression: {
     xp: number;
     level: number;
+    xpToNextLevel: number;
     respawnTimeRemaining: number;
   };
 
