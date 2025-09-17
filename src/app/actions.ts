@@ -3,6 +3,25 @@
 import { implementAIUnitBehaviors, type AIUnitBehaviorsInput, type AIUnitBehaviorsOutput } from "@/ai/flows/implement-ai-unit-behaviors";
 import { summarizeGameEvents, type SummarizeGameEventsInput, type SummarizeGameEventsOutput } from "@/ai/flows/summarize-game-events";
 import { gameState } from "@/server/game-state";
+import type { Unit, UnitComposition } from "@/lib/types";
+
+export type SquadUnit = Pick<Unit, 'id' | 'name' | 'type'>;
+
+export interface JoinGameInput {
+  pseudo: string;
+  teamId: 'blue' | 'red';
+  squadType: UnitComposition;
+  squad: SquadUnit[];
+}
+
+export async function joinGame(input: JoinGameInput): Promise<void> {
+  try {
+    gameState.addPlayerSquad(input);
+  } catch (error) {
+    console.error("Error in joinGame:", error);
+    throw new Error("Failed to join the game on the server.");
+  }
+}
 
 export async function runAIUnitBehaviors(input: AIUnitBehaviorsInput): Promise<AIUnitBehaviorsOutput> {
   try {

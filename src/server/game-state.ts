@@ -1,5 +1,6 @@
 
-import type { Unit, Team } from '@/lib/types';
+import type { Unit, Team, UnitComposition } from '@/lib/types';
+import type { JoinGameInput, SquadUnit } from '@/app/actions';
 
 const teams: { [key: string]: Team } = {
   blue: {
@@ -16,97 +17,15 @@ const teams: { [key: string]: Team } = {
   },
 };
 
-const units: Unit[] = [
-  // Blue Team
-  { 
-    id: 'b1', name: 'Chevalier Bleu', type: 'Chevalier', teamId: 'blue', composition: 'attaque', 
-    position: { x: 2, y: 3 }, 
-    stats: { hp: 90, maxHp: 100, resource: 40, maxResource: 50, atk: 15, def: 10, spd: 5 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player1' }
-  },
-  { 
-    id: 'b2', name: 'Archer Bleu', type: 'Archer', teamId: 'blue', composition: 'attaque',
-    position: { x: 2, y: 4 },
-    stats: { hp: 70, maxHp: 70, resource: 60, maxResource: 60, atk: 12, def: 5, spd: 7 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: ['Hâte'], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player1' }
-  },
-  { 
-    id: 'b3', name: 'Gardien Bleu', type: 'Gardien', teamId: 'blue', composition: 'défense',
-    position: { x: 1, y: 3 },
-    stats: { hp: 100, maxHp: 120, resource: 30, maxResource: 30, atk: 8, def: 20, spd: 4 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: ['Protégé'], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player2' }
-  },
-    { 
-    id: 'b4', name: 'Mage Bleu', type: 'Mage', teamId: 'blue', composition: 'recherche',
-    position: { x: 1, y: 2 },
-    stats: { hp: 60, maxHp: 60, resource: 95, maxResource: 100, atk: 18, def: 3, spd: 6 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player3' }
-  },
-  { 
-    id: 'b5', name: 'Éclaireur Bleu', type: 'Éclaireur', teamId: 'blue', composition: 'capture',
-    position: { x: 4, y: 2 },
-    stats: { hp: 80, maxHp: 80, resource: 50, maxResource: 50, atk: 10, def: 7, spd: 8 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player4' }
-  },
-  
-  // Red Team
+const initialUnits: Unit[] = [
+  // Red Team example - will be removed once players join
   { 
     id: 'r1', name: 'Berserker Rouge', type: 'Berserker', teamId: 'red', composition: 'attaque',
-    position: { x: 8, y: 7 },
+    position: { x: 8, y: 7 }, 
     stats: { hp: 85, maxHp: 100, resource: 45, maxResource: 50, atk: 16, def: 8, spd: 6 },
     progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
     combat: { cooldowns: {}, buffs: ['Enragé'], debuffs: [], status: 'alive' },
     control: { controllerPlayerId: 'player5' }
-  },
-  { 
-    id: 'r2', name: 'Chasseur Rouge', type: 'Chasseur', teamId: 'red', composition: 'attaque',
-    position: { x: 9, y: 7 },
-    stats: { hp: 75, maxHp: 75, resource: 55, maxResource: 60, atk: 13, def: 6, spd: 7 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player5' }
-  },
-  { 
-    id: 'r3', name: 'Sentinelle Rouge', type: 'Sentinelle', teamId: 'red', composition: 'défense',
-    position: { x: 10, y: 8 },
-    stats: { hp: 100, maxHp: 120, resource: 35, maxResource: 40, atk: 9, def: 22, spd: 4 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player6' }
-  },
-  { 
-    id: 'r4', name: 'Sorcier Rouge', type: 'Sorcier', teamId: 'red', composition: 'recherche',
-    position: { x: 10, y: 9 },
-    stats: { hp: 55, maxHp: 55, resource: 100, maxResource: 100, atk: 20, def: 2, spd: 6 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: ['Bouclier de Mana'], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player7' }
-  },
-  { 
-    id: 'r5', name: 'Infiltrateur Rouge', type: 'Infiltrateur', teamId: 'red', composition: 'capture',
-    position: { x: 6, y: 9 },
-    stats: { hp: 75, maxHp: 75, resource: 55, maxResource: 60, atk: 11, def: 8, spd: 9 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player8' }
-  },
-  { 
-    id: 'r6', name: 'Guerrier Rouge', type: 'Guerrier', teamId: 'red', composition: 'attaque',
-    position: { x: 7, y: 6 },
-    stats: { hp: 95, maxHp: 100, resource: 30, maxResource: 30, atk: 14, def: 12, spd: 5 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player9' }
   },
 ];
 
@@ -156,8 +75,23 @@ const unitCompositionData = [
 // In a real scenario, this would be a more robust class or module.
 // =================================================================
 
-let liveUnits = [...units.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
+let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
 let liveTeams = {...teams};
+
+const getBaseStatsForUnitType = (type: string) => {
+    switch (type.toLowerCase()) {
+        case 'mage':
+            return { maxHp: 60, maxResource: 100, atk: 18, def: 3, spd: 6 };
+        case 'valkyrie':
+            return { maxHp: 85, maxResource: 50, atk: 15, def: 8, spd: 7 };
+        case 'armored':
+            return { maxHp: 120, maxResource: 30, atk: 10, def: 15, spd: 4 };
+        case 'archer':
+            return { maxHp: 70, maxResource: 60, atk: 12, def: 5, spd: 8 };
+        default:
+            return { maxHp: 100, maxResource: 50, atk: 10, def: 10, spd: 5 };
+    }
+}
 
 export const gameState = {
   getUnits: () => liveUnits,
@@ -166,8 +100,49 @@ export const gameState = {
   getTeamResourceData: () => teamResourceData,
   getUnitCompositionData: () => unitCompositionData,
 
-  // Example of a function that modifies state.
-  // We'll build on this for joining games, etc.
+  addPlayerSquad: (input: JoinGameInput) => {
+    console.log(`Player ${input.pseudo} is joining team ${input.teamId} as ${input.squadType}`);
+    
+    // Remove existing units for this player to prevent duplicates on reconnect/rejoin
+    liveUnits = liveUnits.filter(u => u.control.controllerPlayerId !== input.pseudo);
+
+    const newUnits: Unit[] = input.squad.map((squadUnit, index) => {
+        const baseStats = getBaseStatsForUnitType(squadUnit.type);
+        const newUnit: Unit = {
+            id: `${input.pseudo}-${index}`,
+            name: squadUnit.name,
+            type: squadUnit.type,
+            teamId: input.teamId,
+            composition: input.squadType,
+            position: { x: Math.floor(Math.random() * 10) + 1, y: Math.floor(Math.random() * 10) + 1 }, // Random position for now
+            stats: {
+                ...baseStats,
+                hp: baseStats.maxHp,
+                resource: baseStats.maxResource,
+            },
+            progression: {
+                xp: 0,
+                level: 1,
+                xpToNextLevel: 100,
+                respawnTimeRemaining: 0,
+            },
+            combat: {
+                cooldowns: {},
+                buffs: [],
+                debuffs: [],
+                status: 'alive',
+            },
+            control: {
+                controllerPlayerId: input.pseudo,
+            },
+        };
+        return newUnit;
+    });
+
+    liveUnits.push(...newUnits);
+    console.log(`Added ${newUnits.length} new units for player ${input.pseudo}. Total units: ${liveUnits.length}`);
+  },
+  
   updateUnitPosition: (unitId: string, x: number, y: number) => {
     liveUnits = liveUnits.map(unit => 
       unit.id === unitId ? { ...unit, position: { x, y } } : unit
@@ -184,8 +159,7 @@ export const gameState = {
         while (newProgression.xp >= newProgression.xpToNextLevel) {
           newProgression.level++;
           newProgression.xp -= newProgression.xpToNextLevel;
-          // For simplicity, we'll keep the next threshold the same.
-          // This could be a curve, e.g., newProgression.xpToNextLevel *= 1.5;
+          newProgression.xpToNextLevel *= 1.5; // Example: increase XP needed for next level
         }
         return { ...unit, progression: newProgression };
       }
@@ -232,7 +206,7 @@ export const gameState = {
 
   reset: () => {
     // Deep copy to avoid mutation issues on subsequent resets
-    liveUnits = [...units.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
+    liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
     liveTeams = {...teams};
   }
 };

@@ -4,20 +4,21 @@ import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Hourglass, UserPlus, XSquare } from 'lucide-react';
+import { Hourglass, Loader2, UserPlus, XSquare } from 'lucide-react';
 import { UnitSelectionModal } from '@/components/player/unit-selection-modal';
-import type { Unit } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { joinGame, type SquadUnit } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
-
-type SquadUnit = Pick<Unit, 'id' | 'name' | 'type'>;
 
 export default function PlayerDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const pseudo = searchParams.get('pseudo');
   const teamId = searchParams.get('teamId');
   const squadType = searchParams.get('squadType');
+  const [isLoading, setIsLoading] = useState(false);
 
   const [squad, setSquad] = useState<(SquadUnit | null)[]>([null, null, null, null]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +53,6 @@ export default function PlayerDashboardPage() {
   };
 
   if (!pseudo || !teamId || !squadType) {
-    // This case should ideally not happen if the flow is correct
     return (
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <p>Erreur: Informations sur le joueur manquantes. Veuillez retourner au lobby.</p>
@@ -62,15 +62,32 @@ export default function PlayerDashboardPage() {
   
   const isSquadFull = squad.every((unit) => unit !== null);
 
-  const handleConfirmSquad = () => {
-    const params = new URLSearchParams(searchParams);
-    squad.forEach((unit, index) => {
-        if(unit) {
-            params.set(`unit${index}_name`, unit.name);
-            params.set(`unit${index}_type`, unit.type);
-        }
-    });
-    router.push(`/player/waiting-room?${params.toString()}`);
+  const handleConfirmSquad = async () => {
+    if (!isSquadFull || !pseudo || !teamId || !squadType) return;
+    
+    setIsLoading(true);
+
+    try {
+      await joinGame({
+        pseudo,
+        teamId: teamId as 'blue' | 'red',
+        squadType: squadType as any,
+        squad: squad as SquadUnit[],
+      });
+      
+      const params = new URLSearchParams(searchParams);
+      router.push(`/player/waiting-room?${params.toString()}`);
+
+    } catch (error) {
+      console.error("Failed to join game:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de rejoindre la partie. Veuillez réessayer.",
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -92,7 +109,7 @@ export default function PlayerDashboardPage() {
         <CardHeader>
           <CardTitle>Gestion de l'Escouade</CardTitle>
           <CardDescription>
-            Composez votre escouade de 4 unités. Les types disponibles sont : Mage, Valkyrie, Armored, et Archer.
+            Composez votre escouade de 4 unités. Les types disponibles sont : Mage, Valkyrie, Blindé, et Archer.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -124,8 +141,8 @@ export default function PlayerDashboardPage() {
             ))}
           </div>
           <div className="flex justify-center mt-8">
-            <Button size="lg" disabled={!isSquadFull} onClick={handleConfirmSquad}>
-              <Hourglass className="mr-2" />
+            <Button size="lg" disabled={!isSquadFull || isLoading} onClick={handleConfirmSquad}>
+              {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Hourglass className="mr-2" />}
               Prêt pour le combat (Salle d'attente)
             </Button>
           </div>
