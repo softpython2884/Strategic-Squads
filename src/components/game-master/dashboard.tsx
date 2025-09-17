@@ -10,15 +10,15 @@ export default function GameMasterDashboard() {
       <TabsList className="grid w-full grid-cols-1 h-auto mb-6 sm:w-fit sm:grid-cols-3">
         <TabsTrigger value="map" className="gap-2">
           <Map className="w-4 h-4" />
-          Strategic Map
+          Carte Stratégique
         </TabsTrigger>
         <TabsTrigger value="spectator" className="gap-2">
           <MonitorPlay className="w-4 h-4" />
-          Spectator
+          Spectateur
         </TabsTrigger>
         <TabsTrigger value="dashboard" className="gap-2">
           <SlidersHorizontal className="w-4 h-4" />
-          Dashboard
+          Tableau de Bord
         </TabsTrigger>
       </TabsList>
       <TabsContent value="map">

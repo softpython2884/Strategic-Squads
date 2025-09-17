@@ -11,8 +11,8 @@ export default function TechnicalDashboard() {
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>AI Behavior Simulation</CardTitle>
-            <CardDescription>Test and verify AI unit responses based on game state.</CardDescription>
+            <CardTitle>Simulation de Comportement IA</CardTitle>
+            <CardDescription>Testez et vérifiez les réponses des unités IA en fonction de l'état du jeu.</CardDescription>
           </CardHeader>
           <CardContent>
             <AiBehaviorTester />
@@ -20,8 +20,8 @@ export default function TechnicalDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Team Resource Rate</CardTitle>
-            <CardDescription>Resources gathered per minute by each team.</CardDescription>
+            <CardTitle>Taux de Ressources par Équipe</CardTitle>
+            <CardDescription>Ressources collectées par minute par chaque équipe.</CardDescription>
           </CardHeader>
           <CardContent>
             <TeamStatsChart data={teamResourceData} />
@@ -31,8 +31,8 @@ export default function TechnicalDashboard() {
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Game Event Log</CardTitle>
-            <CardDescription>Live feed of significant game events with AI-powered summaries.</CardDescription>
+            <CardTitle>Journal des Événements du Jeu</CardTitle>
+            <CardDescription>Flux en direct des événements importants du jeu avec des résumés par IA.</CardDescription>
           </CardHeader>
           <CardContent>
             <EventLog />
@@ -40,8 +40,8 @@ export default function TechnicalDashboard() {
         </Card>
          <Card>
           <CardHeader>
-            <CardTitle>Unit Composition</CardTitle>
-            <CardDescription>Current unit distribution across both teams.</CardDescription>
+            <CardTitle>Composition des Unités</CardTitle>
+            <CardDescription>Distribution actuelle des unités dans les deux équipes.</CardDescription>
           </CardHeader>
           <CardContent>
             <UnitCompositionChart data={unitCompositionData} />

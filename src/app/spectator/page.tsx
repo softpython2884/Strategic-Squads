@@ -14,14 +14,14 @@ export default function SpectatorPage() {
           <h1 className="text-xl font-bold md:text-2xl font-headline text-primary-foreground">
             Strategic Squads
             <span className="hidden ml-3 text-sm font-medium sm:inline-block text-muted-foreground">
-              Spectator Mode
+              Mode Spectateur
             </span>
           </h1>
         </div>
         <Button asChild variant="outline">
           <Link href="/lobby">
             <ArrowLeft className="mr-2" />
-            Back to Lobby
+            Retour au Salon
           </Link>
         </Button>
       </header>

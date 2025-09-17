@@ -2,13 +2,13 @@ import type { Unit, Team } from './types';
 
 export const teams: { [key: string]: Team } = {
   blue: {
-    name: "Blue Team",
+    name: "Équipe Bleue",
     color: "#3b82f6",
     bgClass: "bg-blue-500",
     textClass: "text-blue-50",
   },
   red: {
-    name: "Red Team",
+    name: "Équipe Rouge",
     color: "#ef4444",
     bgClass: "bg-red-500",
     textClass: "text-red-50",
@@ -33,25 +33,25 @@ export const units: Unit[] = [
 ];
 
 export const gameEventsLog = `
-[00:15] Game Start. Gates are open.
-[01:30] Blue Knight engages Red Berserker near mid-lane.
-[01:32] Blue Knight health: 75. Red Berserker health: 60.
-[01:38] Blue Archer supports Blue Knight. Red Berserker retreats.
-[02:10] Red Infiltrator spotted near North Tower.
-[02:15] Blue Guardian moves to intercept Red Infiltrator.
-[03:00] Blue Team captures Vision Ward in jungle.
-[03:45] Red Sorcerer completes 'Arcane Power' research. Team-wide mana regen +5%.
-[04:20] Major team fight erupts at South Idol.
-[04:22] Blue Mage casts 'Frost Nova', hitting 3 enemy units.
-[04:25] Red Hunter uses 'Rapid Fire' on Blue Guardian. Blue Guardian health: 40.
-[04:28] UNUSUAL PATTERN: Red Berserker targets Blue Mage instead of closer Blue Knight.
-[04:31] Blue Knight uses 'Charge' to peel for Blue Mage.
-[04:35] Red Sorcerer is eliminated by Blue Archer.
-[04:40] Red team disengages. Blue Team secures South Idol.
-[05:15] Blue Team has a 500 gold advantage.
-[06:00] Lull in fighting. Both teams farming lanes.
-[07:30] Red Team groups up and pushes towards North Tower.
-[07:50] Blue Team prepares a defense at North Tower.
+[00:15] Début de la partie. Les portes sont ouvertes.
+[01:30] Le Chevalier Bleu engage le Berserker Rouge près de la voie du milieu.
+[01:32] Santé du Chevalier Bleu : 75. Santé du Berserker Rouge : 60.
+[01:38] L'Archer Bleu soutient le Chevalier Bleu. Le Berserker Rouge bat en retraite.
+[02:10] Infiltrateur Rouge repéré près de la Tour Nord.
+[02:15] Le Gardien Bleu se déplace pour intercepter l'Infiltrateur Rouge.
+[03:00] L'Équipe Bleue capture la Balise de Vision dans la jungle.
+[03:45] Le Sorcier Rouge termine la recherche 'Puissance Arcanique'. Régénération de mana de l'équipe +5%.
+[04:20] Un combat d'équipe majeur éclate à l'Idole du Sud.
+[04:22] Le Mage Bleu lance 'Nova de Givre', touchant 3 unités ennemies.
+[04:25] Le Chasseur Rouge utilise 'Tir Rapide' sur le Gardien Bleu. Santé du Gardien Bleu : 40.
+[04:28] MODÈLE INHABITUEL : Le Berserker Rouge cible le Mage Bleu au lieu du Chevalier Bleu plus proche.
+[04:31] Le Chevalier Bleu utilise 'Charge' pour protéger le Mage Bleu.
+[04:35] Le Sorcier Rouge est éliminé par l'Archer Bleu.
+[04:40] L'équipe Rouge se désengage. L'Équipe Bleue sécurise l'Idole du Sud.
+[05:15] L'Équipe Bleue a un avantage de 500 pièces d'or.
+[06:00] Calme plat. Les deux équipes farment sur leurs voies.
+[07:30] L'Équipe Rouge se regroupe et pousse vers la Tour Nord.
+[07:50] L'Équipe Bleue prépare une défense à la Tour Nord.
 `;
 
 export const teamResourceData = [
@@ -65,8 +65,8 @@ export const teamResourceData = [
 ];
 
 export const unitCompositionData = [
-    { composition: "Attack", blue: 2, red: 3 },
-    { composition: "Defense", blue: 1, red: 1 },
+    { composition: "Attaque", blue: 2, red: 3 },
+    { composition: "Défense", blue: 1, red: 1 },
     { composition: "Capture", blue: 1, red: 1 },
-    { composition: "Research", blue: 1, red: 1 },
+    { composition: "Recherche", blue: 1, red: 1 },
 ];

@@ -20,7 +20,7 @@ export default function EventLog() {
       const response = await runSummarizeGameEvents({ gameEventsLog });
       setSummary(response.summary);
     } catch (e: any) {
-      setError(e.message || "An unknown error occurred.");
+      setError(e.message || "Une erreur inconnue est survenue.");
     } finally {
       setIsLoading(false);
     }
@@ -33,20 +33,20 @@ export default function EventLog() {
       </div>
       <Button onClick={handleSummarize} disabled={isLoading} className="w-full sm:w-auto">
         {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-        Summarize Events
+        Résumer les Événements
       </Button>
 
       {summary && (
         <Alert>
           <Sparkles className="w-4 h-4" />
-          <AlertTitle className="font-headline">AI Summary</AlertTitle>
+          <AlertTitle className="font-headline">Résumé IA</AlertTitle>
           <AlertDescription>{summary}</AlertDescription>
         </Alert>
       )}
 
       {error && (
         <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Erreur</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

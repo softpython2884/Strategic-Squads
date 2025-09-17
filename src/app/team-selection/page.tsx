@@ -5,10 +5,10 @@ import { Bot, ArrowLeft, Shield, Swords, Crosshair, FlaskConical, Users } from '
 import { teams } from '@/lib/data';
 
 const squads = [
-    { type: 'attack', icon: Swords, count: 2 },
-    { type: 'defense', icon: Shield, count: 2 },
+    { type: 'attaque', icon: Swords, count: 2 },
+    { type: 'défense', icon: Shield, count: 2 },
     { type: 'capture', icon: Crosshair, count: 1 },
-    { type: 'research', icon: FlaskConical, count: 1 },
+    { type: 'recherche', icon: FlaskConical, count: 1 },
 ]
 
 export default function TeamSelectionPage() {
@@ -22,27 +22,27 @@ export default function TeamSelectionPage() {
           <h1 className="text-xl font-bold md:text-2xl font-headline text-primary-foreground">
             Strategic Squads
             <span className="hidden ml-3 text-sm font-medium sm:inline-block text-muted-foreground">
-              Team Selection
+              Sélection de l'équipe
             </span>
           </h1>
         </div>
          <Button asChild variant="outline">
           <Link href="/lobby">
             <ArrowLeft className="mr-2" />
-            Back to Lobby
+            Retour au Salon
           </Link>
         </Button>
       </header>
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto">
-            <h2 className="mb-6 text-3xl font-bold text-center font-headline">Choose Your Team & Squad</h2>
+            <h2 className="mb-6 text-3xl font-bold text-center font-headline">Choisissez votre équipe et votre escouade</h2>
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 {Object.values(teams).map(team => (
                     <Card key={team.name} className="flex flex-col transition-all duration-300 hover:shadow-lg hover:border-primary">
                         <CardHeader className="text-center">
                             <CardTitle className={`text-2xl font-bold ${team.textClass} ${team.bgClass} rounded-t-lg p-4`}>{team.name}</CardTitle>
-                            <CardDescription className="pt-4">Select a squad to command.</CardDescription>
+                            <CardDescription className="pt-4">Sélectionnez une escouade à commander.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow grid grid-cols-2 gap-4">
                            {squads.map(squad => (
@@ -60,7 +60,7 @@ export default function TeamSelectionPage() {
              <div className="flex justify-center mt-8">
                 <Button size="lg" disabled>
                     <Users className="mr-2" />
-                    Confirm Selection & Enter Game
+                    Confirmer et entrer dans le jeu
                 </Button>
              </div>
         </div>

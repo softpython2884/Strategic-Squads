@@ -10,11 +10,11 @@ import {
 
 const chartConfig = {
   blue: {
-    label: "Blue Team",
+    label: "Équipe Bleue",
     color: "hsl(var(--chart-1))",
   },
   red: {
-    label: "Red Team",
+    label: "Équipe Rouge",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;

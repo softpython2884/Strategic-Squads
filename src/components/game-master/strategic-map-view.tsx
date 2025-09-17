@@ -13,8 +13,8 @@ const unitIcons: { [key in Unit["composition"]]: React.ReactNode } = {
 };
 
 const objectives = [
-  { id: 1, name: "North Tower", position: { x: 5, y: 1 }, type: 'tower' },
-  { id: 2, name: "South Idol", position: { x: 4, y: 8 }, type: 'idol' },
+  { id: 1, name: "Tour Nord", position: { x: 5, y: 1 }, type: 'tower' },
+  { id: 2, name: "Idole Sud", position: { x: 4, y: 8 }, type: 'idol' },
 ];
 
 export default function StrategicMapView() {
@@ -23,7 +23,7 @@ export default function StrategicMapView() {
   return (
     <Card className="overflow-hidden">
       <CardHeader>
-        <CardTitle>Strategic Map</CardTitle>
+        <CardTitle>Carte Stratégique</CardTitle>
       </CardHeader>
       <CardContent>
         <TooltipProvider>
@@ -53,9 +53,9 @@ export default function StrategicMapView() {
                          </TooltipTrigger>
                          <TooltipContent>
                            <p className="font-bold">{unit.name}</p>
-                           <p>Team: {teams[unit.teamId]?.name}</p>
-                           <p>Health: {unit.stats.health}</p>
-                           <p>Role: {unit.composition}</p>
+                           <p>Équipe: {teams[unit.teamId]?.name}</p>
+                           <p>Santé: {unit.stats.health}</p>
+                           <p>Rôle: {unit.composition}</p>
                          </TooltipContent>
                        </Tooltip>
                     )}

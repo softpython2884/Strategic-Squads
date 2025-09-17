@@ -15,14 +15,14 @@ export default function SpectatorView() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2">
                 <CardHeader>
-                    <CardTitle>Player Perspective</CardTitle>
-                    <CardDescription>Following Blue Team's Alpha Squad</CardDescription>
+                    <CardTitle>Perspective du Joueur</CardTitle>
+                    <CardDescription>Suivi de l'escouade Alpha de l'Équipe Bleue</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="w-full overflow-hidden rounded-lg aspect-video">
                         <Image
                             src={spectatorImage?.imageUrl || "https://picsum.photos/seed/4/1280/720"}
-                            alt={spectatorImage?.description || "Spectator view of a fantasy battle"}
+                            alt={spectatorImage?.description || "Vue spectateur d'une bataille fantastique"}
                             data-ai-hint={spectatorImage?.imageHint || "fantasy battle"}
                             width={1280}
                             height={720}
@@ -34,8 +34,8 @@ export default function SpectatorView() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Alpha Squad</CardTitle>
-                    <CardDescription>Status of currently spectated squad</CardDescription>
+                    <CardTitle>Escouade Alpha</CardTitle>
+                    <CardDescription>Statut de l'escouade actuellement observée</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {blueSquad.map(unit => (
@@ -51,11 +51,11 @@ export default function SpectatorView() {
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-green-400">HP</span>
+                                        <span className="text-xs font-medium text-green-400">PV</span>
                                         <Progress value={unit.stats.health} className="h-2 bg-muted" indicatorClassName="bg-green-500" />
                                     </div>
                                      <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-blue-400">MP</span>
+                                        <span className="text-xs font-medium text-blue-400">PM</span>
                                         <Progress value={unit.stats.mana} className="h-2 bg-muted" indicatorClassName="bg-blue-500" />
                                     </div>
                                 </div>
