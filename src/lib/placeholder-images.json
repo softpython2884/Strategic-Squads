@@ -1,3 +1,11 @@
+
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "spectator-view",
+      "description": "A wide-angle view of a fantasy battle scene, with two armies clashing in a valley.",
+      "imageUrl": "https://picsum.photos/seed/squadsgame/1280/720",
+      "imageHint": "fantasy battle"
+    }
+  ]
 }
