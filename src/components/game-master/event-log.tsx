@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState } from "react";
 import { runSummarizeGameEvents } from "@/app/actions";
-import { gameEventsLog } from "@/lib/data";
+import { gameState } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Sparkles } from "lucide-react";
@@ -11,6 +12,8 @@ export default function EventLog() {
   const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const gameEventsLog = gameState.getGameEventsLog();
 
   async function handleSummarize() {
     setIsLoading(true);

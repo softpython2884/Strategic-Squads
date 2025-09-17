@@ -1,9 +1,10 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AiBehaviorTester from "./ai-behavior-tester";
 import EventLog from "./event-log";
 import TeamStatsChart from "./team-stats-chart";
 import UnitCompositionChart from "./unit-composition-chart";
-import { teamResourceData, unitCompositionData } from "@/lib/data";
+import { gameState } from "@/lib/data";
 
 export default function TechnicalDashboard() {
   return (
@@ -24,7 +25,7 @@ export default function TechnicalDashboard() {
             <CardDescription>Ressources collectées par minute par chaque équipe.</CardDescription>
           </CardHeader>
           <CardContent>
-            <TeamStatsChart data={teamResourceData} />
+            <TeamStatsChart data={gameState.getTeamResourceData()} />
           </CardContent>
         </Card>
       </div>
@@ -44,7 +45,7 @@ export default function TechnicalDashboard() {
             <CardDescription>Distribution actuelle des unités dans les deux équipes.</CardDescription>
           </CardHeader>
           <CardContent>
-            <UnitCompositionChart data={unitCompositionData} />
+            <UnitCompositionChart data={gameState.getUnitCompositionData()} />
           </CardContent>
         </Card>
       </div>

@@ -45,7 +45,8 @@ export default function StrategicMapView({ units, teams }: StrategicMapViewProps
     const teamPlayerIds = new Set<string>();
     units.filter(u => u.teamId === teamId && u.control.controllerPlayerId).forEach(u => teamPlayerIds.add(u.control.controllerPlayerId!));
     
-    return Array.from(teamPlayerIds).map(playerId => {
+    // Sort to have a consistent order
+    return Array.from(teamPlayerIds).sort().map(playerId => {
       const playerUnits = playerGroups[playerId] || [];
       const squadComposition = playerUnits[0]?.composition || 'attaque';
       const avgHp = playerUnits.reduce((acc, u) => acc + (u.stats.hp / u.stats.maxHp), 0) / (playerUnits.length || 1) * 100;

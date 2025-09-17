@@ -1,14 +1,15 @@
+
 import { Bot } from 'lucide-react';
 import GameMasterDashboard from '@/components/game-master/dashboard';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { units, teams } from '@/lib/data';
+import { gameState } from '@/lib/data';
 
 export default function GMPage() {
-  // Note: In the future, this data will come from a live game server.
-  const gameUnits = units;
-  const gameTeams = teams;
+  // Note: This data now comes from our in-memory game state manager
+  const gameUnits = gameState.getUnits();
+  const gameTeams = gameState.getTeams();
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">

@@ -1,10 +1,10 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from "next/image";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import type { Team, Unit } from "@/lib/types";
 
 type SpectatorViewProps = {
@@ -72,25 +72,3 @@ export default function SpectatorView({ units, teams }: SpectatorViewProps) {
         </div>
     );
 }
-
-// Small modification to Progress to allow indicator class
-declare module "@/components/ui/progress" {
-    interface ProgressProps {
-        indicatorClassName?: string;
-    }
-}
-import {Progress as OriginalProgress} from "@/components/ui/progress";
-import React from "react";
-
-const ModifiedProgress = React.forwardRef<
-  React.ElementRef<typeof OriginalProgress>,
-  React.ComponentPropsWithoutRef<typeof OriginalProgress> & { indicatorClassName?: string }
->(({ value, className, indicatorClassName, ...props }, ref) => (
-  <OriginalProgress value={value} className={className} {...props} ref={ref}>
-    <div
-      className={cn("h-full w-full flex-1 bg-primary transition-all", indicatorClassName)}
-      style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-    />
-  </OriginalProgress>
-));
-Object.assign(Progress, { ...OriginalProgress, displayName: "Progress" });

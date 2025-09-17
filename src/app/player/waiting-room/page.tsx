@@ -3,7 +3,7 @@
 
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { units, teams } from "@/lib/data"
+import { gameState } from "@/lib/data"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -21,6 +21,9 @@ export default function WaitingRoomPage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
     const teamId = searchParams.get('teamId');
+
+    const teams = gameState.getTeams();
+    const units = gameState.getUnits();
 
     if (!teamId) {
         return <div className="flex items-center justify-center h-full">Veuillez sélectionner une équipe.</div>
@@ -57,11 +60,15 @@ export default function WaitingRoomPage() {
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {Object.entries(playerGroups).map(([playerId, squadUnits]) => {
-                        const commanderName = playerId === 'player1' && pseudo ? pseudo : `Cmdr ${playerId.replace('player', '')}`;
+                        const isCurrentUser = playerId === 'player1' && pseudo;
+                        const commanderName = isCurrentUser ? pseudo : `Cmdr ${playerId.replace('player', '')}`;
                         const squadComposition = squadUnits[0]?.composition || 'attaque';
                         
                         return (
-                            <Card key={playerId} className="overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-primary">
+                            <Card key={playerId} className={cn(
+                              "overflow-hidden transition-all duration-300",
+                              isCurrentUser ? "border-primary shadow-lg" : "hover:shadow-lg hover:border-primary/50"
+                              )}>
                                 <CardHeader className={cn("p-4", team.bgClass, team.textClass)}>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">

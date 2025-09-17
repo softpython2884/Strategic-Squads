@@ -1,19 +1,22 @@
-export type UnitComposition = 'attack' | 'defense' | 'capture' | 'research';
+
+export type UnitComposition = 'attaque' | 'défense' | 'capture' | 'recherche';
 
 export type UnitStatus = 'alive' | 'down' | 'dead';
 
 export type Unit = {
   // Identity
   id: string;
+  name: string;
   type: string; // e.g., 'Knight', 'Archer', 'Tower', 'Idol'
   teamId: 'blue' | 'red';
-  groupId?: string;
+  
+  // Role
+  composition: UnitComposition;
   
   // Position
   position: {
     x: number;
     y: number;
-    // orientation could be added later
   };
   
   // Base Stats
@@ -48,8 +51,6 @@ export type Unit = {
     focus?: string; // target entity id
   };
   
-  // Role
-  composition: UnitComposition;
 };
 
 export type Team = {
