@@ -3,8 +3,14 @@ import { Map, MonitorPlay, SlidersHorizontal } from "lucide-react";
 import StrategicMapView from "./strategic-map-view";
 import SpectatorView from "./spectator-view";
 import TechnicalDashboard from "./technical-dashboard";
+import type { Team, Unit } from "@/lib/types";
 
-export default function GameMasterDashboard() {
+type GameMasterDashboardProps = {
+  units: Unit[];
+  teams: { [key: string]: Team };
+}
+
+export default function GameMasterDashboard({ units, teams }: GameMasterDashboardProps) {
   return (
     <Tabs defaultValue="map" className="w-full">
       <TabsList className="grid w-full grid-cols-1 h-auto mb-6 sm:w-fit sm:grid-cols-3">
@@ -22,10 +28,10 @@ export default function GameMasterDashboard() {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="map">
-        <StrategicMapView />
+        <StrategicMapView units={units} teams={teams} />
       </TabsContent>
       <TabsContent value="spectator">
-        <SpectatorView />
+        <SpectatorView units={units} teams={teams} />
       </TabsContent>
       <TabsContent value="dashboard">
         <TechnicalDashboard />

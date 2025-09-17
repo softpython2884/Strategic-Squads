@@ -3,8 +3,13 @@ import GameMasterDashboard from '@/components/game-master/dashboard';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { units, teams } from '@/lib/data';
 
 export default function GMPage() {
+  // Note: In the future, this data will come from a live game server.
+  const gameUnits = units;
+  const gameTeams = teams;
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b shrink-0 bg-background/90 backdrop-blur-sm sm:px-6">
@@ -27,7 +32,7 @@ export default function GMPage() {
         </Button>
       </header>
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <GameMasterDashboard />
+        <GameMasterDashboard units={gameUnits} teams={gameTeams} />
       </main>
     </div>
   );

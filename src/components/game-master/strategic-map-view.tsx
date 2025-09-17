@@ -2,8 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Shield, Swords, FlaskConical, Crosshair, TowerControl } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Unit } from "@/lib/types";
-import { teams, units as allUnits } from "@/lib/data";
+import type { Unit, Team } from "@/lib/types";
 
 const unitIcons: { [key in Unit["composition"]]: React.ReactNode } = {
   attack: <Swords className="w-4 h-4" />,
@@ -17,8 +16,13 @@ const objectives = [
   { id: 2, name: "Idole Sud", position: { x: 4, y: 8 }, type: 'idol' },
 ];
 
-export default function StrategicMapView() {
-  const units = allUnits.slice(0, 10); // Show a subset of units on the map
+type StrategicMapViewProps = {
+  units: Unit[];
+  teams: { [key: string]: Team };
+}
+
+export default function StrategicMapView({ units, teams }: StrategicMapViewProps) {
+  const mapUnits = units.slice(0, 10); // Show a subset of units on the map
 
   return (
     <Card className="overflow-hidden">
@@ -33,7 +37,7 @@ export default function StrategicMapView() {
                 const x = (i % 10) + 1;
                 const y = Math.floor(i / 10) + 1;
 
-                const unit = units.find(u => u.position.x === x && u.position.y === y);
+                const unit = mapUnits.find(u => u.position.x === x && u.position.y === y);
                 const objective = objectives.find(o => o.position.x === x && o.position.y === y);
 
                 return (

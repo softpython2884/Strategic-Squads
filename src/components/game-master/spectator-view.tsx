@@ -4,12 +4,17 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { units as allUnits, teams } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import type { Team, Unit } from "@/lib/types";
 
-export default function SpectatorView() {
+type SpectatorViewProps = {
+    units: Unit[];
+    teams: { [key: string]: Team };
+}
+
+export default function SpectatorView({ units, teams }: SpectatorViewProps) {
     const spectatorImage = PlaceHolderImages.find(p => p.id === "spectator-view");
-    const blueSquad = allUnits.filter(u => u.teamId === 'blue').slice(0, 4);
+    const blueSquad = units.filter(u => u.teamId === 'blue').slice(0, 4);
 
     return (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
