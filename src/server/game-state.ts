@@ -18,15 +18,7 @@ const teams: { [key: string]: Team } = {
 };
 
 const initialUnits: Unit[] = [
-  // Red Team example - will be removed once players join
-  { 
-    id: 'r1', name: 'Berserker Rouge', type: 'Berserker', teamId: 'red', composition: 'attaque',
-    position: { x: 8, y: 7 }, 
-    stats: { hp: 85, maxHp: 100, resource: 45, maxResource: 50, atk: 16, def: 8, spd: 6 },
-    progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
-    combat: { cooldowns: {}, buffs: ['Enragé'], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'ai-player-1' }
-  },
+  // No initial units, the game will be populated by players joining.
 ];
 
 const gameEventsLog = `
