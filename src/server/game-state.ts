@@ -156,7 +156,7 @@ const unitCompositionData = [
 // In a real scenario, this would be a more robust class or module.
 // =================================================================
 
-let liveUnits = [...units.map(u => ({...u, progression: {...u.progression}}))];
+let liveUnits = [...units.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
 let liveTeams = {...teams};
 
 export const gameState = {
@@ -193,10 +193,46 @@ export const gameState = {
     });
     return liveUnits.find(u => u.id === unitId);
   },
+  
+  useSkill: (unitId: string, skillId: string, ticks: number) => {
+    const unit = liveUnits.find(u => u.id === unitId);
+    if (!unit) {
+      console.error(`useSkill: Unit with id ${unitId} not found.`);
+      return false;
+    }
+    
+    if (unit.combat.cooldowns[skillId] > 0) {
+      console.log(`Skill ${skillId} is on cooldown for unit ${unitId}.`);
+      return false;
+    }
+    
+    console.log(`Unit ${unitId} used skill ${skillId}. Setting cooldown for ${ticks} ticks.`);
+    unit.combat.cooldowns[skillId] = ticks;
+    // Here you would apply the skill's effects (damage, healing, etc.)
+    
+    return true;
+  },
+  
+  processCooldowns: () => {
+    liveUnits = liveUnits.map(unit => {
+      const newCooldowns = { ...unit.combat.cooldowns };
+      let hasChanged = false;
+      for (const skillId in newCooldowns) {
+        if (newCooldowns[skillId] > 0) {
+          newCooldowns[skillId]--;
+          hasChanged = true;
+        }
+      }
+      if (hasChanged) {
+        return { ...unit, combat: { ...unit.combat, cooldowns: newCooldowns } };
+      }
+      return unit;
+    });
+  },
 
   reset: () => {
     // Deep copy to avoid mutation issues on subsequent resets
-    liveUnits = [...units.map(u => ({...u, progression: {...u.progression}}))];
+    liveUnits = [...units.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
     liveTeams = {...teams};
   }
 };

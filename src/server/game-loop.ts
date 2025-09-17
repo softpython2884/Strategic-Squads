@@ -12,7 +12,10 @@ let tickCount = 0;
 
 function gameTick() {
   tickCount++;
-  console.log(`Game Tick #${tickCount} at ${new Date().toISOString()}`);
+  // console.log(`Game Tick #${tickCount} at ${new Date().toISOString()}`);
+
+  // Process cooldowns for all units
+  gameState.processCooldowns();
 
   // Future logic will go here:
   // - Process player inputs/intents
