@@ -22,7 +22,7 @@ function gameTick() {
   // - Update unit positions and states
   // - Run AI behaviors
   // - Check for win/loss conditions
-  // - Broadcast state changes to clients
+  // - Broadcast state changes to clients (via WebSockets)
 }
 
 /**

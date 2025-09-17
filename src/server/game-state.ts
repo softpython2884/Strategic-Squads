@@ -208,5 +208,6 @@ export const gameState = {
     // Deep copy to avoid mutation issues on subsequent resets
     liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
     liveTeams = {...teams};
+    console.log('Game state has been reset.');
   }
 };
