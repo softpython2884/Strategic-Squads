@@ -52,16 +52,16 @@ export default function SpectatorView({ units, teams }: SpectatorViewProps) {
                             <div className="flex-1 space-y-1">
                                 <div className="flex items-center justify-between">
                                   <p className="font-semibold">{unit.name}</p>
-                                  {unit.status.map(s => <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>)}
+                                  {unit.combat.buffs.map(s => <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>)}
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-green-400">PV</span>
-                                        <Progress value={unit.stats.health} className="h-2 bg-muted" indicatorClassName="bg-green-500" />
+                                        <Progress value={(unit.stats.hp / unit.stats.maxHp) * 100} className="h-2 bg-muted" indicatorClassName="bg-green-500" />
                                     </div>
                                      <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-blue-400">PM</span>
-                                        <Progress value={unit.stats.mana} className="h-2 bg-muted" indicatorClassName="bg-blue-500" />
+                                        <Progress value={(unit.stats.resource / unit.stats.maxResource) * 100} className="h-2 bg-muted" indicatorClassName="bg-blue-500" />
                                     </div>
                                 </div>
                             </div>

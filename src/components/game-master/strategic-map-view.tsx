@@ -58,7 +58,7 @@ export default function StrategicMapView({ units, teams }: StrategicMapViewProps
                          <TooltipContent>
                            <p className="font-bold">{unit.name}</p>
                            <p>Équipe: {teams[unit.teamId]?.name}</p>
-                           <p>Santé: {unit.stats.health}</p>
+                           <p>Santé: {unit.stats.hp}</p>
                            <p>Rôle: {unit.composition}</p>
                          </TooltipContent>
                        </Tooltip>

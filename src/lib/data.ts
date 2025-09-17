@@ -17,19 +17,96 @@ export const teams: { [key: string]: Team } = {
 
 export const units: Unit[] = [
   // Blue Team
-  { id: 'b1', name: 'Blue Knight', teamId: 'blue', composition: 'attack', position: { x: 2, y: 3 }, stats: { health: 90, mana: 40 }, status: [] },
-  { id: 'b2', name: 'Blue Archer', teamId: 'blue', composition: 'attack', position: { x: 2, y: 4 }, stats: { health: 70, mana: 60 }, status: ['Haste'] },
-  { id: 'b3', name: 'Blue Guardian', teamId: 'blue', composition: 'defense', position: { x: 1, y: 3 }, stats: { health: 100, mana: 30 }, status: ['Shielded'] },
-  { id: 'b4', name: 'Blue Mage', teamId: 'blue', composition: 'research', position: { x: 1, y: 2 }, stats: { health: 60, mana: 95 }, status: [] },
-  { id: 'b5', name: 'Blue Scout', teamId: 'blue', composition: 'capture', position: { x: 4, y: 2 }, stats: { health: 80, mana: 50 }, status: [] },
+  { 
+    id: 'b1', name: 'Blue Knight', type: 'Knight', teamId: 'blue', groupId: 'player1_squadA', composition: 'attack', 
+    position: { x: 2, y: 3 }, 
+    stats: { hp: 90, maxHp: 100, resource: 40, maxResource: 50, atk: 15, def: 10, spd: 5 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player1' }
+  },
+  { 
+    id: 'b2', name: 'Blue Archer', type: 'Archer', teamId: 'blue', groupId: 'player1_squadA', composition: 'attack',
+    position: { x: 2, y: 4 },
+    stats: { hp: 70, maxHp: 70, resource: 60, maxResource: 60, atk: 12, def: 5, spd: 7 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: ['Haste'], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player1' }
+  },
+  { 
+    id: 'b3', name: 'Blue Guardian', type: 'Guardian', teamId: 'blue', groupId: 'player2_squadB', composition: 'defense',
+    position: { x: 1, y: 3 },
+    stats: { hp: 100, maxHp: 120, resource: 30, maxResource: 30, atk: 8, def: 20, spd: 4 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: ['Shielded'], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player2' }
+  },
+  { 
+    id: 'b4', name: 'Blue Mage', type: 'Mage', teamId: 'blue', groupId: 'player3_squadC', composition: 'research',
+    position: { x: 1, y: 2 },
+    stats: { hp: 60, maxHp: 60, resource: 95, maxResource: 100, atk: 18, def: 3, spd: 6 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player3' }
+  },
+  { 
+    id: 'b5', name: 'Blue Scout', type: 'Scout', teamId: 'blue', groupId: 'player4_squadD', composition: 'capture',
+    position: { x: 4, y: 2 },
+    stats: { hp: 80, maxHp: 80, resource: 50, maxResource: 50, atk: 10, def: 7, spd: 8 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player4' }
+  },
   
   // Red Team
-  { id: 'r1', name: 'Red Berserker', teamId: 'red', composition: 'attack', position: { x: 8, y: 7 }, stats: { health: 85, mana: 45 }, status: ['Enraged'] },
-  { id: 'r2', name: 'Red Hunter', teamId: 'red', composition: 'attack', position: { x: 9, y: 7 }, stats: { health: 75, mana: 55 }, status: [] },
-  { id: 'r3', name: 'Red Sentinel', teamId: 'red', composition: 'defense', position: { x: 10, y: 8 }, stats: { health: 100, mana: 35 }, status: [] },
-  { id: 'r4', name: 'Red Sorcerer', teamId: 'red', composition: 'research', position: { x: 10, y: 9 }, stats: { health: 55, mana: 100 }, status: ['Mana Shield'] },
-  { id: 'r5', name: 'Red Infiltrator', teamId: 'red', composition: 'capture', position: { x: 6, y: 9 }, stats: { health: 75, mana: 55 }, status: [] },
-  { id: 'r6', name: 'Red Warrior', teamId: 'red', composition: 'attack', position: { x: 7, y: 6 }, stats: { health: 95, mana: 30 }, status: [] },
+  { 
+    id: 'r1', name: 'Red Berserker', type: 'Berserker', teamId: 'red', groupId: 'player5_squadE', composition: 'attack',
+    position: { x: 8, y: 7 },
+    stats: { hp: 85, maxHp: 100, resource: 45, maxResource: 50, atk: 16, def: 8, spd: 6 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: ['Enraged'], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player5' }
+  },
+  { 
+    id: 'r2', name: 'Red Hunter', type: 'Hunter', teamId: 'red', groupId: 'player5_squadE', composition: 'attack',
+    position: { x: 9, y: 7 },
+    stats: { hp: 75, maxHp: 75, resource: 55, maxResource: 60, atk: 13, def: 6, spd: 7 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player5' }
+  },
+  { 
+    id: 'r3', name: 'Red Sentinel', type: 'Sentinel', teamId: 'red', groupId: 'player6_squadF', composition: 'defense',
+    position: { x: 10, y: 8 },
+    stats: { hp: 100, maxHp: 120, resource: 35, maxResource: 40, atk: 9, def: 22, spd: 4 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player6' }
+  },
+  { 
+    id: 'r4', name: 'Red Sorcerer', type: 'Sorcerer', teamId: 'red', groupId: 'player7_squadG', composition: 'research',
+    position: { x: 10, y: 9 },
+    stats: { hp: 55, maxHp: 55, resource: 100, maxResource: 100, atk: 20, def: 2, spd: 6 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: ['Mana Shield'], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player7' }
+  },
+  { 
+    id: 'r5', name: 'Red Infiltrator', type: 'Infiltrator', teamId: 'red', groupId: 'player8_squadH', composition: 'capture',
+    position: { x: 6, y: 9 },
+    stats: { hp: 75, maxHp: 75, resource: 55, maxResource: 60, atk: 11, def: 8, spd: 9 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player8' }
+  },
+  { 
+    id: 'r6', name: 'Red Warrior', type: 'Warrior', teamId: 'red', composition: 'attack',
+    position: { x: 7, y: 6 },
+    stats: { hp: 95, maxHp: 100, resource: 30, maxResource: 30, atk: 14, def: 12, spd: 5 },
+    progression: { xp: 0, level: 1, respawnTimeRemaining: 0 },
+    combat: { cooldowns: {}, buffs: [], debuffs: [], status: 'alive' },
+    control: { controllerPlayerId: 'player9' }
+  },
 ];
 
 export const gameEventsLog = `

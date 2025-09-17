@@ -1,19 +1,55 @@
 export type UnitComposition = 'attack' | 'defense' | 'capture' | 'research';
 
+export type UnitStatus = 'alive' | 'down' | 'dead';
+
 export type Unit = {
+  // Identity
   id: string;
-  name: string;
+  type: string; // e.g., 'Knight', 'Archer', 'Tower', 'Idol'
   teamId: 'blue' | 'red';
-  composition: UnitComposition;
+  groupId?: string;
+  
+  // Position
   position: {
     x: number;
     y: number;
+    // orientation could be added later
   };
+  
+  // Base Stats
   stats: {
-    health: number;
-    mana: number;
+    hp: number;
+    maxHp: number;
+    resource: number; // mana, energy, etc.
+    maxResource: number;
+    atk: number;
+    def: number;
+    spd: number;
   };
-  status: string[];
+
+  // Progression
+  progression: {
+    xp: number;
+    level: number;
+    respawnTimeRemaining: number;
+  };
+
+  // Combat State
+  combat: {
+    cooldowns: { [skillId: string]: number };
+    buffs: string[];
+    debuffs: string[];
+    status: UnitStatus;
+  };
+
+  // Control
+  control: {
+    controllerPlayerId?: string;
+    focus?: string; // target entity id
+  };
+  
+  // Role
+  composition: UnitComposition;
 };
 
 export type Team = {
