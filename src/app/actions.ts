@@ -1,3 +1,4 @@
+
 "use server";
 
 import { implementAIUnitBehaviors, type AIUnitBehaviorsInput, type AIUnitBehaviorsOutput } from "@/ai/flows/implement-ai-unit-behaviors";
@@ -61,4 +62,24 @@ export async function useSkill(playerId: string, unitId: string, skillId: string
     // In a real app, you might not want to throw the raw error to the client
     throw new Error(`Failed to use skill: ${error.message}`);
   }
+}
+
+export async function moveUnit(playerId: string, unitId: string, position: { x: number, y: number }): Promise<Unit | null> {
+    try {
+        const unit = gameState.getUnits().find(u => u.id === unitId);
+        if (!unit || unit.control.controllerPlayerId !== playerId) {
+            throw new Error("Player does not control this unit.");
+        }
+        
+        console.log(`Moving unit ${unitId} to ${position.x}, ${position.y} for player ${playerId}`);
+        const updatedUnit = gameState.updateUnitPosition(unitId, position.x, position.y);
+        
+        // In a real WebSocket implementation, this is where you'd broadcast the update.
+        // For now, we return the updated unit to the client that initiated the move.
+        return updatedUnit || null;
+
+    } catch (error: any) {
+        console.error("Error in moveUnit:", error.message);
+        throw new Error(`Failed to move unit: ${error.message}`);
+    }
 }

@@ -1,14 +1,15 @@
 
 'use client'
 
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { gameState } from "@/server/game-state"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Shield, Swords, Crosshair, FlaskConical, User, Loader2 } from 'lucide-react';
+import { Shield, Swords, Crosshair, FlaskConical, User, Loader2, Play } from 'lucide-react';
 import type { Unit } from "@/lib/types"
+import { Button } from "@/components/ui/button"
 
 const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
   attaque: <Swords className="w-4 h-4" />,
@@ -18,6 +19,7 @@ const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
 };
 
 export default function WaitingRoomPage() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
     const teamId = searchParams.get('teamId');
@@ -34,13 +36,20 @@ export default function WaitingRoomPage() {
 
     const playerGroups: { [key: string]: Unit[] } = {};
     teamUnits.forEach(unit => {
-        if (unit.control.controllerPlayerId) {
-        if (!playerGroups[unit.control.controllerPlayerId]) {
-            playerGroups[unit.control.controllerPlayerId] = [];
-        }
-        playerGroups[unit.control.controllerPlayerId].push(unit);
+        const playerId = unit.control.controllerPlayerId;
+        if (playerId) {
+            if (!playerGroups[playerId]) {
+                playerGroups[playerId] = [];
+            }
+            playerGroups[playerId].push(unit);
         }
     });
+
+    const handleStartGame = () => {
+        const params = new URLSearchParams(searchParams);
+        router.push(`/player/game?${params.toString()}`);
+    }
+
 
     return (
         <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -55,13 +64,17 @@ export default function WaitingRoomPage() {
                             <Loader2 className="animate-spin" />
                             <span>La partie va bientôt commencer...</span>
                         </div>
+                        <Button onClick={handleStartGame}>
+                            <Play className="mr-2"/>
+                            (Dev) Démarrer la partie
+                        </Button>
                     </CardContent>
                 </Card>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {Object.entries(playerGroups).map(([playerId, squadUnits]) => {
-                        const isCurrentUser = playerId === 'player1' && pseudo;
-                        const commanderName = isCurrentUser ? pseudo : `Cmdr ${playerId.replace('player', '')}`;
+                        const isCurrentUser = playerId === pseudo;
+                        const commanderName = squadUnits[0]?.control.controllerPlayerId || `Cmdr ${playerId}`;
                         const squadComposition = squadUnits[0]?.composition || 'attaque';
                         
                         return (
@@ -83,10 +96,10 @@ export default function WaitingRoomPage() {
                                 </CardHeader>
                                 <CardContent className="p-4 space-y-4">
                                      <h4 className="font-semibold text-muted-foreground">Unités de l'escouade :</h4>
-                                    {squadUnits.map(unit => (
+                                     {squadUnits.map(unit => (
                                         <div key={unit.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/30">
                                             <Avatar className="w-10 h-10">
-                                                <AvatarImage src={`https://i.pravatar.cc/150?u=${unit.id}`} alt={unit.name}/>
+                                                <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.type}`} alt={unit.name}/>
                                                 <AvatarFallback>{unit.name.charAt(0)}</AvatarFallback>
                                             </Avatar>
                                             <div className="flex-1">

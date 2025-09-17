@@ -25,7 +25,7 @@ const initialUnits: Unit[] = [
     stats: { hp: 85, maxHp: 100, resource: 45, maxResource: 50, atk: 16, def: 8, spd: 6 },
     progression: { xp: 0, level: 1, xpToNextLevel: 100, respawnTimeRemaining: 0 },
     combat: { cooldowns: {}, buffs: ['Enragé'], debuffs: [], status: 'alive' },
-    control: { controllerPlayerId: 'player5' }
+    control: { controllerPlayerId: 'ai-player-1' }
   },
 ];
 
@@ -143,11 +143,16 @@ export const gameState = {
     console.log(`Added ${newUnits.length} new units for player ${input.pseudo}. Total units: ${liveUnits.length}`);
   },
   
-  updateUnitPosition: (unitId: string, x: number, y: number) => {
-    liveUnits = liveUnits.map(unit => 
-      unit.id === unitId ? { ...unit, position: { x, y } } : unit
-    );
-    return liveUnits.find(u => u.id === unitId);
+  updateUnitPosition: (unitId: string, x: number, y: number): Unit | undefined => {
+    let updatedUnit: Unit | undefined;
+    liveUnits = liveUnits.map(unit => {
+      if (unit.id === unitId) {
+        updatedUnit = { ...unit, position: { x, y } };
+        return updatedUnit;
+      }
+      return unit;
+    });
+    return updatedUnit;
   },
 
   grantXp: (unitId: string, amount: number) => {
@@ -159,7 +164,7 @@ export const gameState = {
         while (newProgression.xp >= newProgression.xpToNextLevel) {
           newProgression.level++;
           newProgression.xp -= newProgression.xpToNextLevel;
-          newProgression.xpToNextLevel *= 1.5; // Example: increase XP needed for next level
+          newProgression.xpToNextLevel = Math.floor(newProgression.xpToNextLevel * 1.5); // Example: increase XP needed for next level
         }
         return { ...unit, progression: newProgression };
       }
