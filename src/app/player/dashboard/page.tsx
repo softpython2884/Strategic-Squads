@@ -5,7 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { teams } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { UserPlus } from 'lucide-react';
+import { Hourglass, UserPlus } from 'lucide-react';
+import Link from 'next/link';
 
 const unitTypes = ['Mage', 'Valkyrie', 'Armored', 'Archer'];
 
@@ -19,6 +20,21 @@ export default function PlayerDashboardPage() {
 
     // Placeholder for selected units
     const selectedUnits = [null, null, null, null];
+
+    if (!pseudo || !teamId || !squadType) {
+        return (
+             <main className="flex-1 p-4 md:p-6 lg:p-8">
+                <p>Informations sur le joueur manquantes. Veuillez retourner à la sélection d'équipe.</p>
+                <Button asChild variant="link">
+                    <Link href="/team-selection">Retour</Link>
+                </Button>
+            </main>
+        )
+    }
+    
+    const isSquadFull = selectedUnits.every(unit => unit !== null);
+    
+    const waitingRoomUrl = `/player/waiting-room?${searchParams.toString()}`;
 
     return (
         <main className="flex-1 p-4 md:p-6 lg:p-8">
@@ -53,8 +69,11 @@ export default function PlayerDashboardPage() {
                         ))}
                     </div>
                      <div className="flex justify-center mt-8">
-                        <Button size="lg" disabled>
-                            Prêt pour le combat (4/4)
+                        <Button size="lg" disabled={isSquadFull} asChild>
+                            <Link href={waitingRoomUrl}>
+                                <Hourglass className="mr-2" />
+                                Prêt pour le combat (Salle d'attente)
+                            </Link>
                         </Button>
                     </div>
                 </CardContent>
