@@ -1,8 +1,13 @@
+
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, ArrowLeft, Shield, Swords, Crosshair, FlaskConical, Users } from 'lucide-react';
 import { teams } from '@/lib/data';
+import { cn } from '@/lib/utils';
 
 const squads = [
     { type: 'attaque', icon: Swords, count: 2 },
@@ -11,7 +16,20 @@ const squads = [
     { type: 'recherche', icon: FlaskConical, count: 1 },
 ]
 
+type Selection = {
+    teamId: string | null;
+    squadType: string | null;
+}
+
 export default function TeamSelectionPage() {
+    const [selection, setSelection] = useState<Selection>({ teamId: null, squadType: null });
+
+    const handleSelectSquad = (teamId: string, squadType: string) => {
+        setSelection({ teamId, squadType });
+    }
+
+    const isSelectionComplete = selection.teamId && selection.squadType;
+
     return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b shrink-0 bg-background/90 backdrop-blur-sm sm:px-6">
@@ -38,15 +56,26 @@ export default function TeamSelectionPage() {
             <h2 className="mb-6 text-3xl font-bold text-center font-headline">Choisissez votre équipe et votre escouade</h2>
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                {Object.values(teams).map(team => (
-                    <Card key={team.name} className="flex flex-col transition-all duration-300 hover:shadow-lg hover:border-primary">
+                {Object.entries(teams).map(([teamId, team]) => (
+                    <Card 
+                        key={team.name} 
+                        className={cn(
+                            "flex flex-col transition-all duration-300",
+                            selection.teamId === teamId ? 'border-primary shadow-lg' : 'hover:shadow-lg hover:border-primary/50'
+                        )}
+                    >
                         <CardHeader className="text-center">
                             <CardTitle className={`text-2xl font-bold ${team.textClass} ${team.bgClass} rounded-t-lg p-4`}>{team.name}</CardTitle>
                             <CardDescription className="pt-4">Sélectionnez une escouade à commander.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow grid grid-cols-2 gap-4">
                            {squads.map(squad => (
-                                <Button key={squad.type} variant="outline" className="h-20 text-lg">
+                                <Button 
+                                    key={squad.type} 
+                                    variant={selection.teamId === teamId && selection.squadType === squad.type ? 'default' : 'outline'}
+                                    className="h-20 text-lg"
+                                    onClick={() => handleSelectSquad(teamId, squad.type)}
+                                >
                                    <div className="flex flex-col items-center gap-2">
                                     <squad.icon className="w-6 h-6"/>
                                     <span className="capitalize">{squad.type} ({squad.count})</span>
@@ -58,7 +87,7 @@ export default function TeamSelectionPage() {
                 ))}
             </div>
              <div className="flex justify-center mt-8">
-                <Button size="lg" disabled>
+                <Button size="lg" disabled={!isSelectionComplete}>
                     <Users className="mr-2" />
                     Confirmer et entrer dans le jeu
                 </Button>
