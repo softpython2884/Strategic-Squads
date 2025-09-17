@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, ArrowLeft, Shield, Swords, Crosshair, FlaskConical, User, ChevronsRight } from 'lucide-react';
@@ -10,6 +10,7 @@ import { teams } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 const squads = [
     { type: 'attaque', icon: Swords, count: 2, description: "Unités offensives pour percer les défenses." },
@@ -25,6 +26,7 @@ export default function TeamSelectionPage() {
     const [pseudo, setPseudo] = useState('');
     const [teamId, setTeamId] = useState<string | null>(null);
     const [squadType, setSquadType] = useState<string | null>(null);
+    const router = useRouter();
 
     const handleNext = () => {
         if (step === 'pseudo' && pseudo.trim().length > 2) {
@@ -32,6 +34,18 @@ export default function TeamSelectionPage() {
         } else if (step === 'team' && teamId) {
             setStep('squad');
         }
+    }
+    
+    const handleConfirm = () => {
+        if (!pseudo || !teamId || !squadType) return;
+        
+        const params = new URLSearchParams({
+            pseudo,
+            teamId,
+            squadType,
+        });
+
+        router.push(`/player/dashboard?${params.toString()}`);
     }
 
     const renderStep = () => {
@@ -52,6 +66,7 @@ export default function TeamSelectionPage() {
                                     value={pseudo} 
                                     onChange={(e) => setPseudo(e.target.value)} 
                                     autoFocus
+                                    onKeyDown={(e) => e.key === 'Enter' && handleNext()}
                                 />
                             </div>
                             <Button onClick={handleNext} disabled={pseudo.trim().length <= 2} className="w-full">
@@ -120,16 +135,35 @@ export default function TeamSelectionPage() {
                            ))}
                         </div>
                         <div className="flex justify-center mt-8">
-                            <Button asChild size="lg" disabled={!squadType}>
-                               <Link href="/player/dashboard">
+                            <Button onClick={handleConfirm} size="lg" disabled={!squadType}>
                                  <User className="mr-2" />
                                  Confirmer et préparer l'escouade
-                               </Link>
                             </Button>
                         </div>
                     </div>
                  );
         }
+    }
+
+    const breadcrumbs = () => {
+        const steps: SelectionStep[] = ['pseudo', 'team', 'squad'];
+        const currentStepIndex = steps.indexOf(step);
+
+        return (
+            <div className="absolute flex items-center gap-2 text-sm top-20 left-6 text-muted-foreground">
+                <Button variant="link" size="sm" onClick={() => setStep('pseudo')} disabled={currentStepIndex < 1}>
+                    Pseudo
+                </Button>
+                <ChevronsRight className="w-4 h-4" />
+                <Button variant="link" size="sm" onClick={() => setStep('team')} disabled={currentStepIndex < 1}>
+                    Équipe
+                </Button>
+                <ChevronsRight className="w-4 h-4" />
+                <Button variant="link" size="sm" onClick={() => setStep('squad')} disabled={currentStepIndex < 2}>
+                    Escouade
+                </Button>
+            </div>
+        )
     }
 
     return (
@@ -153,7 +187,8 @@ export default function TeamSelectionPage() {
           </Link>
         </Button>
       </header>
-      <main className="flex items-center flex-1 p-4 md:p-6 lg:p-8">
+      <main className="relative flex items-center flex-1 p-4 md:p-6 lg:p-8">
+        {step !== 'pseudo' && breadcrumbs()}
         <div className="w-full">
             {renderStep()}
         </div>
