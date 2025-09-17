@@ -46,13 +46,13 @@
     --muted-foreground: 180 5% 55%;
     --accent: 34 100% 50%;
     --accent-foreground: 34 100% 10%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
     --border: 180 10% 25%;
     --input: 180 10% 25%;
     --ring: 34 100% 50%;
     --chart-1: 180 100% 30%;
-    --chart-2: 34 100% 50%;
+    --chart-2: 0 72% 51%;
     --chart-3: 210 40% 98%;
     --chart-4: 180 10% 25%;
     --chart-5: 180 5% 55%;

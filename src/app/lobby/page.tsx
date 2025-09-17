@@ -23,7 +23,7 @@ const roles = [
     title: 'Joueur',
     description: 'Rejoignez une équipe et menez votre escouade à la victoire.',
     href: '/team-selection',
-    color: 'text-green-400',
+    color: 'text-red-400',
   },
 ];
 
