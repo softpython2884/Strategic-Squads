@@ -24,7 +24,7 @@ type SelectionStep = 'pseudo' | 'team' | 'squad';
 export default function TeamSelectionPage() {
     const [step, setStep] = useState<SelectionStep>('pseudo');
     const [pseudo, setPseudo] = useState('');
-    const [teamId, setTeamId] = useState<string | null>(null);
+    const [teamId, setTeamId] = useState<'blue' | 'red' | null>(null);
     const [squadType, setSquadType] = useState<string | null>(null);
     const router = useRouter();
 
@@ -54,15 +54,26 @@ export default function TeamSelectionPage() {
         };
     }, []);
 
-    const squadsAvailability = squadsConfig.map(squad => {
-        const currentCount = units.filter(u => u.composition === squad.type).map(u => u.control.controllerPlayerId).filter((value, index, self) => self.indexOf(value) === index).length;
-        const isAvailable = currentCount < squad.max;
-        return {
-            ...squad,
-            currentCount,
-            isAvailable,
-        }
-    });
+    const getSquadsAvailability = () => {
+        if (!teamId) return squadsConfig.map(s => ({...s, currentCount: 0, isAvailable: true}));
+
+        return squadsConfig.map(squad => {
+            // Count players in the selected team that have this squad composition
+            const currentCount = units
+                .filter(u => u.teamId === teamId && u.composition === squad.type)
+                .map(u => u.control.controllerPlayerId)
+                // Get unique player IDs
+                .filter((value, index, self) => self.indexOf(value) === index)
+                .length;
+            
+            const isAvailable = currentCount < squad.max;
+            return {
+                ...squad,
+                currentCount,
+                isAvailable,
+            };
+        });
+    }
 
     const handleNext = () => {
         if (step === 'pseudo' && pseudo.trim().length > 2) {
@@ -124,7 +135,7 @@ export default function TeamSelectionPage() {
                                         "text-center cursor-pointer transition-all duration-300 hover:shadow-lg",
                                         teamId === id ? 'border-primary shadow-lg' : 'hover:border-primary/50'
                                     )}
-                                    onClick={() => setTeamId(id)}
+                                    onClick={() => setTeamId(id as 'blue' | 'red')}
                                 >
                                     <CardHeader>
                                         <CardTitle className={`text-3xl font-bold p-8 rounded-t-lg ${(team as any).bgClass} ${(team as any).textClass}`}>
@@ -146,6 +157,7 @@ export default function TeamSelectionPage() {
                 );
             
             case 'squad':
+                 const squadsAvailability = getSquadsAvailability();
                  return (
                     <div className="w-full max-w-5xl mx-auto">
                         <h2 className="mb-2 text-3xl font-bold text-center font-headline">Sélectionnez votre escouade</h2>
@@ -166,7 +178,7 @@ export default function TeamSelectionPage() {
                                         <CardTitle className="capitalize">
                                             {squad.type}{' '} 
                                             <span className="text-sm font-normal text-muted-foreground">
-                                                ({squad.currentCount}/{squad.max} disp.)
+                                                ({squad.currentCount}/{squad.max} pris)
                                             </span>
                                         </CardTitle>
                                     </CardHeader>
@@ -203,11 +215,11 @@ export default function TeamSelectionPage() {
                     Pseudo
                 </Button>
                 <ChevronsRight className="w-4 h-4" />
-                <Button variant="link" size="sm" onClick={() => setStep('team')} disabled={currentStepIndex < 1}>
+                <Button variant="link" size="sm" onClick={() => setStep('team')} disabled={currentStepIndex < 1 || !pseudo}>
                     Équipe
                 </Button>
                 <ChevronsRight className="w-4 h-4" />
-                <Button variant="link" size="sm" onClick={() => setStep('squad')} disabled={currentStepIndex < 2}>
+                <Button variant="link" size="sm" onClick={() => {}} disabled={currentStepIndex < 2 || !teamId}>
                     Escouade
                 </Button>
             </div>
