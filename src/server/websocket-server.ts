@@ -56,6 +56,7 @@ export async function startWebSocketServer() {
             payload: {
                 units: gameState.getUnits(),
                 teams: gameState.getTeams(),
+                gameStarted: gameState.isGameStarted(),
             }
         }
         ws.send(JSON.stringify(initialState));
@@ -67,7 +68,8 @@ export async function startWebSocketServer() {
       try {
         const action = JSON.parse(message.toString()) as ServerAction;
         console.log(`[Game Server] Received action from client: ${action.type}`);
-        handleServerAction(action);
+        // Pass the WebSocket instance to the handler to allow direct responses
+        handleServerAction(action, ws);
       } catch (error) {
         console.error("Failed to parse message from client:", error);
       }
@@ -88,13 +90,19 @@ export async function startWebSocketServer() {
   });
 }
 
-function handleServerAction(action: ServerAction) {
+function handleServerAction(action: ServerAction, ws: WebSocket) {
     switch (action.type) {
         case 'joinGame':
             console.log(`[Game Server] Handling joinGame for ${action.payload.pseudo}`);
-            gameState.addPlayerSquad(action.payload);
-            // The state change will be broadcasted to all clients, including the one who just joined.
-            broadcastGameState(); 
+            if (gameState.isGameStarted()) {
+                console.log(`[Game Server] Denying joinGame for ${action.payload.pseudo}, game already started.`);
+                ws.send(JSON.stringify({ type: 'join-failed', reason: 'La partie a déjà commencé.' }));
+            } else {
+                gameState.addPlayerSquad(action.payload);
+                ws.send(JSON.stringify({ type: 'join-success' }));
+                // The state change will be broadcasted to all clients.
+                broadcastGameState(); 
+            }
             break;
         case 'moveUnit':
             console.log(`[Game Server] Handling moveUnit for ${action.payload.unitId}`);
@@ -115,6 +123,7 @@ function handleServerAction(action: ServerAction) {
             break;
         case 'startGame':
             console.log('[Game Server] Handling startGame');
+            gameState.startGame();
             broadcastGameStart();
             break;
     }
@@ -129,6 +138,7 @@ export async function broadcastGameState() {
         payload: {
             units: gameState.getUnits(),
             teams: gameState.getTeams(),
+            gameStarted: gameState.isGameStarted(),
         }
     };
     const message = JSON.stringify(currentState);

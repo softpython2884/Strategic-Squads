@@ -52,10 +52,10 @@ const teamResourceData = [
 ];
 
 const unitCompositionData = [
-    { composition: "Attaque", blue: 2, red: 3 },
-    { composition: "Défense", blue: 1, red: 1 },
-    { composition: "Capture", blue: 1, red: 1 },
-    { composition: "Escarmouche", blue: 1, red: 1 },
+    { composition: "attaque", blue: 2, red: 3 },
+    { composition: "défense", blue: 1, red: 1 },
+    { composition: "capture", blue: 1, red: 1 },
+    { composition: "escarmouche", blue: 1, red: 1 },
 ];
 
 
@@ -66,6 +66,7 @@ const unitCompositionData = [
 
 let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
 let liveTeams = {...teams};
+let isGameStarted = false;
 
 const getBaseStatsForUnitType = (type: string) => {
     switch (type.toLowerCase()) {
@@ -89,6 +90,12 @@ export const gameState = {
   getGameEventsLog: () => gameEventsLog,
   getTeamResourceData: () => teamResourceData,
   getUnitCompositionData: () => unitCompositionData,
+  isGameStarted: () => isGameStarted,
+
+  startGame: () => {
+    isGameStarted = true;
+    console.log("Game has been started.");
+  },
 
   addPlayerSquad: (input: JoinGameInput) => {
     console.log(`Player ${input.pseudo} is joining team ${input.teamId} as ${input.squadType}`);
@@ -203,6 +210,7 @@ export const gameState = {
     // Deep copy to avoid mutation issues on subsequent resets
     liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
     liveTeams = {...teams};
+    isGameStarted = false;
     console.log('Game state has been reset.');
   }
 };

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,35 @@ export default function PlayerDashboardContent() {
   const [squad, setSquad] = useState<(SquadUnit | null)[]>([null, null, null, null]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
+
+  const ws = useRef<WebSocket | null>(null);
+
+  // Establish WebSocket connection on component mount
+  useEffect(() => {
+    if (!ws.current) {
+      const wsUrl = `ws://${window.location.hostname}:8080`;
+      ws.current = new WebSocket(wsUrl);
+
+      ws.current.onopen = () => console.log('Dashboard WebSocket connected');
+      ws.current.onerror = (error) => {
+        console.error("Dashboard WebSocket error:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion",
+          description: "Impossible de communiquer avec le serveur de jeu. Veuillez réessayer.",
+        });
+      };
+      ws.current.onclose = () => console.log('Dashboard WebSocket disconnected');
+    }
+    
+    // Return a cleanup function
+    return () => {
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+            ws.current.close();
+        }
+    }
+  }, [toast]);
+
 
   const handleOpenModal = (slotIndex: number) => {
     setEditingSlot(slotIndex);
@@ -65,7 +94,14 @@ export default function PlayerDashboardContent() {
   const isSquadFull = squad.every((unit) => unit !== null);
 
   const handleConfirmSquad = async () => {
-    if (!isSquadFull || !pseudo || !teamId || !squadType) return;
+    if (!isSquadFull || !pseudo || !teamId || !squadType || !ws.current || ws.current.readyState !== WebSocket.OPEN) {
+       toast({
+        variant: "destructive",
+        title: "Erreur de Connexion",
+        description: "La connexion au serveur de jeu n'est pas établie. Veuillez rafraîchir la page.",
+      });
+      return;
+    }
     
     setIsLoading(true);
 
@@ -75,39 +111,30 @@ export default function PlayerDashboardContent() {
       squadType: squadType as any,
       squad: squad as SquadUnit[],
     };
-
-    const ws = new WebSocket(`ws://${window.location.hostname}:8080`);
-
-    ws.onopen = () => {
-      console.log('Dashboard WebSocket connected to send joinGame action');
-      const message = {
-        type: 'joinGame',
-        payload: joinGameInput,
-      };
-      ws.send(JSON.stringify(message));
-
-      // Don't wait for a response, just navigate.
-      // The waiting room will get the updated state from its own connection.
-      const params = new URLSearchParams({ pseudo });
-      router.push(`/player/waiting-room?${params.toString()}`);
-      
-      // We can close this connection as its only purpose was to send the message
-      ws.close(); 
+    
+    // Add a listener for the server's response
+    ws.current.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'join-success') {
+            const params = new URLSearchParams({ pseudo });
+            router.push(`/player/waiting-room?${params.toString()}`);
+        } else if (message.type === 'join-failed') {
+             toast({
+                variant: "destructive",
+                title: "Impossible de rejoindre la partie",
+                description: message.reason || "Une erreur est survenue.",
+            });
+             setIsLoading(false);
+        } else if (message.type === 'full-state' || message.type === 'update-state') {
+            // Ignore game state updates on this page for now
+        }
     };
 
-    ws.onerror = (error) => {
-      console.error("Failed to connect to WebSocket to join game:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de connexion",
-        description: "Impossible de communiquer avec le serveur de jeu. Veuillez réessayer.",
-      });
-      setIsLoading(false);
-    };
-
-    ws.onclose = () => {
-        setIsLoading(false);
-    }
+    // Send the join request
+    ws.current.send(JSON.stringify({
+      type: 'joinGame',
+      payload: joinGameInput,
+    }));
   }
 
   return (
