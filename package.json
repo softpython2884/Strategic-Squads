@@ -7,7 +7,7 @@
     "start:game": "tsx src/ai/dev.ts",
     "genkit:watch": "tsx --watch src/ai/dev.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "concurrently \"tsx src/ai/dev.ts\" \"next start -p 9002\"",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
