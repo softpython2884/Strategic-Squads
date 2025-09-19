@@ -18,12 +18,11 @@ export default function PlayerDashboardLayout({
   const searchParams = useSearchParams();
   const pseudo = searchParams.get('pseudo');
 
-  const teams = gameState.getTeams();
-  // Find the player's unit in the game state to determine their team and squad type
-  const playerUnit = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
-  const teamId = playerUnit?.teamId;
-  const squadType = playerUnit?.composition;
+  // Since the player is not yet fully in the game state, we get info from URL
+  const teamId = searchParams.get('teamId');
+  const squadType = searchParams.get('squadType');
   
+  const teams = gameState.getTeams();
   const team = teamId ? teams[teamId as keyof typeof teams] : undefined;
   
   return (

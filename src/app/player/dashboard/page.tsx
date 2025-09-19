@@ -10,19 +10,16 @@ import { UnitSelectionModal } from '@/components/player/unit-selection-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { joinGame, type SquadUnit } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { gameState } from '@/server/game-state';
 
 
 export default function PlayerDashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const pseudo = searchParams.get('pseudo');
   
-  // Get team and squad type from gameState if the user has already selected them
-  const playerInfo = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
-  const teamId = searchParams.get('teamId') || playerInfo?.teamId;
-  const squadType = searchParams.get('squadType') || playerInfo?.composition;
+  const pseudo = searchParams.get('pseudo');
+  const teamId = searchParams.get('teamId');
+  const squadType = searchParams.get('squadType');
 
   const [isLoading, setIsLoading] = useState(false);
   const [squad, setSquad] = useState<(SquadUnit | null)[]>([null, null, null, null]);
@@ -102,7 +99,7 @@ export default function PlayerDashboardPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelect={handleSelectUnit}
-        pseudo={pseudo}
+        pseudo={pseudo ?? ''}
         slotIndex={editingSlot}
       />
       <h1 className="mb-4 text-3xl font-bold font-headline">Tableau de Bord de l'Escouade</h1>

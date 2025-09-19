@@ -19,6 +19,7 @@ export default function PlayerGameLayout({
   const pseudo = searchParams.get('pseudo');
 
   const teams = gameState.getTeams();
+  // Find ONE of the player's units in the game state to determine their team and squad type
   const playerUnit = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
   const teamId = playerUnit?.teamId;
   const squadType = playerUnit?.composition;

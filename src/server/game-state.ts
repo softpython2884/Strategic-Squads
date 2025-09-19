@@ -64,7 +64,6 @@ const unitCompositionData = [
 // =================================================================
 // In-Memory Game State Manager
 // This will act as our "live" database for the game state.
-// In a real scenario, this would be a more robust class or module.
 // =================================================================
 
 let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];

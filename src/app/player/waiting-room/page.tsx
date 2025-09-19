@@ -64,6 +64,7 @@ export default function WaitingRoomPage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
 
+    // Always get the full, live state from the server-side gameState
     const teams = gameState.getTeams();
     const allUnits = gameState.getUnits();
 
@@ -85,7 +86,7 @@ export default function WaitingRoomPage() {
         return Object.entries(playerGroups).map(([playerId, squadUnits]) => ({
             playerId,
             squadUnits,
-            composition: squadUnits[0]?.composition || 'attaque'
+            composition: squadUnits[0]?.composition || 'attaque' // All units in a squad have the same composition
         }));
     }
 
@@ -96,6 +97,7 @@ export default function WaitingRoomPage() {
     const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
     const handleStartGame = () => {
+        // Pass the current player's pseudo to the game page
         const params = new URLSearchParams(searchParams);
         router.push(`/player/game?${params.toString()}`);
     }

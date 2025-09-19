@@ -41,8 +41,7 @@ export default function TeamSelectionPage() {
     const handleConfirm = () => {
         if (!pseudo || !teamId || !squadType) return;
         
-        // We no longer build the full query here. We just pass the essential info
-        // to the dashboard page, which will handle the `joinGame` action.
+        // Pass the essential info to the dashboard page, which will handle the `joinGame` action.
         const params = new URLSearchParams({
             pseudo,
             teamId,
