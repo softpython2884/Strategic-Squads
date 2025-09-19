@@ -65,41 +65,38 @@ export default function WaitingRoomPage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
     
-    // Client-side state for units, updated via WebSocket
-    const [allUnits, setAllUnits] = useState<Unit[]>([]);
+    // This page will now show the state as it was when the page loaded.
+    // Real-time updates are handled on the game page.
+    const [allUnits, setAllUnits] = useState<Unit[]>(() => serverGameState.getUnits());
 
     useEffect(() => {
-        // Dynamically determine the WebSocket URL based on the current hostname.
-        // This ensures it works in both local dev and deployed environments.
         const wsUrl = `ws://${window.location.hostname}:8080`;
         const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
-            console.log('WebSocket connection established');
-        };
-
-        ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            if (message.type === 'full-state' || message.type === 'update-state') {
-                setAllUnits(message.payload);
-            }
+            console.log('WebSocket connection established for waiting room');
+             // We can request a refresh of data on open if needed
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.type === 'full-state' || message.type === 'update-state') {
+                    setAllUnits(message.payload);
+                }
+            };
         };
 
         ws.onclose = () => {
-            console.log('WebSocket connection closed');
+            console.log('WebSocket connection closed for waiting room');
         };
         
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
         }
 
-        // Cleanup on component unmount
         return () => {
             ws.close();
         };
     }, []);
 
-    // Get static team info from server
     const teams = serverGameState.getTeams();
     
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
@@ -120,19 +117,16 @@ export default function WaitingRoomPage() {
         return Object.entries(playerGroups).map(([playerId, squadUnits]) => ({
             playerId,
             squadUnits,
-            composition: squadUnits[0]?.composition || 'attaque' // All units in a squad have the same composition
+            composition: squadUnits[0]?.composition || 'attaque'
         }));
     }
 
     const blueSquads = getSquadsByTeam('blue');
     const redSquads = getSquadsByTeam('red');
     
-    // Check if both teams have at least one player to enable the start button
     const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
     const handleStartGame = () => {
-        // Here we would ideally trigger a "start-game" event via WebSocket
-        // For now, we just navigate the current player.
         const params = new URLSearchParams(searchParams);
         router.push(`/player/game?${params.toString()}`);
     }

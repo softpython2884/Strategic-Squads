@@ -2,7 +2,7 @@
 'use client'
 
 import GameMap from "@/components/player/game-map";
-import { serverGameState } from "@/server/game-state";
+import { gameState as serverGameState } from "@/server/game-state";
 import { Unit } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -15,7 +15,9 @@ export default function GamePage() {
     const teams = serverGameState.getTeams(); // Team data is static
 
     useEffect(() => {
-        const ws = new WebSocket('ws://localhost:8080');
+        // Dynamically determine the WebSocket URL based on the current hostname.
+        const wsUrl = `ws://${window.location.hostname}:8080`;
+        const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => console.log('GamePage WebSocket connected');
 
