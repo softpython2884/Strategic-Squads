@@ -17,10 +17,12 @@ export default function PlayerGameLayout({
 }) {
   const searchParams = useSearchParams();
   const pseudo = searchParams.get('pseudo');
-  const teamId = searchParams.get('teamId');
-  const squadType = searchParams.get('squadType');
 
   const teams = gameState.getTeams();
+  const playerUnit = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
+  const teamId = playerUnit?.teamId;
+  const squadType = playerUnit?.composition;
+  
   const team = teamId ? teams[teamId as keyof typeof teams] : undefined;
   
   return (

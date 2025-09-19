@@ -69,6 +69,8 @@ export default function WaitingRoomPage() {
 
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
         const teamUnits = allUnits.filter(u => u.teamId === teamId);
+        if (teamUnits.length === 0) return [];
+        
         const playerGroups = teamUnits.reduce((acc, unit) => {
             const playerId = unit.control.controllerPlayerId;
             if (playerId) {
@@ -89,6 +91,9 @@ export default function WaitingRoomPage() {
 
     const blueSquads = getSquadsByTeam('blue');
     const redSquads = getSquadsByTeam('red');
+    
+    // Check if both teams have at least one player to enable the start button
+    const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
     const handleStartGame = () => {
         const params = new URLSearchParams(searchParams);
@@ -101,14 +106,14 @@ export default function WaitingRoomPage() {
                 <Card className="mb-8 bg-card/50">
                     <CardHeader>
                         <CardTitle className="text-3xl text-center font-headline">Salle d'attente</CardTitle>
-                        <CardDescription className="text-center">En attente des autres joueurs et du lancement de la partie.</CardDescription>
+                        <CardDescription className="text-center">En attente des autres joueurs. La partie commencera lorsque les deux équipes auront au moins un joueur.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
                         <div className="flex items-center gap-2 text-lg text-muted-foreground">
                             <Loader2 className="animate-spin" />
                             <span>La partie va bientôt commencer...</span>
                         </div>
-                        <Button onClick={handleStartGame}>
+                        <Button onClick={handleStartGame} disabled={!canStartGame}>
                             <Play className="mr-2" />
                             (Dev) Démarrer la partie
                         </Button>
@@ -124,14 +129,18 @@ export default function WaitingRoomPage() {
                                 {teams.blue.name} ({blueSquads.length}/5)
                             </h2>
                         </div>
-                        {blueSquads.map(player => (
-                           <PlayerCard 
-                             key={player.playerId} 
-                             player={player} 
-                             team={teams.blue}
-                             isCurrentUser={player.playerId === pseudo}
-                           />
-                        ))}
+                         {blueSquads.length > 0 ? (
+                            blueSquads.map(player => (
+                               <PlayerCard 
+                                 key={player.playerId} 
+                                 player={player} 
+                                 team={teams.blue}
+                                 isCurrentUser={player.playerId === pseudo}
+                               />
+                            ))
+                        ) : (
+                             <p className="text-center text-muted-foreground">En attente de joueurs...</p>
+                        )}
                     </div>
 
                     {/* Red Team Column */}
@@ -142,14 +151,18 @@ export default function WaitingRoomPage() {
                                 {teams.red.name} ({redSquads.length}/5)
                             </h2>
                         </div>
-                        {redSquads.map(player => (
-                           <PlayerCard 
-                            key={player.playerId} 
-                            player={player} 
-                            team={teams.red}
-                            isCurrentUser={player.playerId === pseudo}
-                           />
-                        ))}
+                        {redSquads.length > 0 ? (
+                            redSquads.map(player => (
+                               <PlayerCard 
+                                key={player.playerId} 
+                                player={player} 
+                                team={teams.red}
+                                isCurrentUser={player.playerId === pseudo}
+                               />
+                            ))
+                        ) : (
+                            <p className="text-center text-muted-foreground">En attente de joueurs...</p>
+                        )}
                     </div>
                 </div>
             </div>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,6 +10,7 @@ import { UnitSelectionModal } from '@/components/player/unit-selection-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { joinGame, type SquadUnit } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import { gameState } from '@/server/game-state';
 
 
 export default function PlayerDashboardPage() {
@@ -16,10 +18,13 @@ export default function PlayerDashboardPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const pseudo = searchParams.get('pseudo');
-  const teamId = searchParams.get('teamId');
-  const squadType = searchParams.get('squadType');
-  const [isLoading, setIsLoading] = useState(false);
+  
+  // Get team and squad type from gameState if the user has already selected them
+  const playerInfo = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
+  const teamId = searchParams.get('teamId') || playerInfo?.teamId;
+  const squadType = searchParams.get('squadType') || playerInfo?.composition;
 
+  const [isLoading, setIsLoading] = useState(false);
   const [squad, setSquad] = useState<(SquadUnit | null)[]>([null, null, null, null]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
@@ -55,7 +60,7 @@ export default function PlayerDashboardPage() {
   if (!pseudo || !teamId || !squadType) {
     return (
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        <p>Erreur: Informations sur le joueur manquantes. Veuillez retourner au lobby.</p>
+        <p>Erreur: Informations sur le joueur manquantes. Veuillez retourner à la sélection d'équipe.</p>
       </main>
     );
   }
@@ -75,7 +80,8 @@ export default function PlayerDashboardPage() {
         squad: squad as SquadUnit[],
       });
       
-      const params = new URLSearchParams(searchParams);
+      // Navigate to waiting room with only the pseudo for identification
+      const params = new URLSearchParams({ pseudo });
       router.push(`/player/waiting-room?${params.toString()}`);
 
     } catch (error) {

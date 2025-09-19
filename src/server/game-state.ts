@@ -77,6 +77,7 @@ const getBaseStatsForUnitType = (type: string) => {
         case 'valkyrie':
             return { maxHp: 85, maxResource: 50, atk: 15, def: 8, spd: 7 };
         case 'armored':
+        case 'blindé':
             return { maxHp: 120, maxResource: 30, atk: 10, def: 15, spd: 4 };
         case 'archer':
             return { maxHp: 70, maxResource: 60, atk: 12, def: 5, spd: 8 };
@@ -101,7 +102,7 @@ export const gameState = {
     const newUnits: Unit[] = input.squad.map((squadUnit, index) => {
         const baseStats = getBaseStatsForUnitType(squadUnit.type);
         const newUnit: Unit = {
-            id: `${input.pseudo}-${index}`,
+            id: `${input.pseudo}-${squadUnit.type}-${index}`, // More unique ID
             name: squadUnit.name,
             type: squadUnit.type,
             teamId: input.teamId,

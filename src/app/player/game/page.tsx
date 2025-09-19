@@ -8,14 +8,14 @@ import { useSearchParams } from "next/navigation";
 export default function GamePage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
-    const teamId = searchParams.get('teamId') as 'blue' | 'red' | null;
 
     const units = gameState.getUnits();
     const teams = gameState.getTeams();
     
     // Filter units for the current player
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
-    const otherUnits = units.filter(u => u.control.controllerPlayerId !== pseudo);
+    // Get all other units (enemies and teammates)
+    const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
 
 
     return (
