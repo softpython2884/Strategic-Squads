@@ -65,39 +65,10 @@ export default function WaitingRoomPage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
     
-    const [allUnits, setAllUnits] = useState<Unit[]>(() => serverGameState.getUnits());
-
-    useEffect(() => {
-        const wsUrl = `ws://${window.location.hostname}:8080`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log('WebSocket connection established for waiting room');
-        };
-        
-        ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            if (message.type === 'full-state' || message.type === 'update-state') {
-                setAllUnits(message.payload);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket connection closed for waiting room');
-        };
-        
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        }
-
-        // This cleanup function will be called when the component unmounts
-        return () => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
-        };
-    }, []);
-
+    // We get the initial state from the server on page load.
+    // In a real-world scenario with a persistent database, this would be a fetch.
+    // For our in-memory state, this is sufficient for now.
+    const allUnits = serverGameState.getUnits();
     const teams = serverGameState.getTeams();
     
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
@@ -142,13 +113,19 @@ export default function WaitingRoomPage() {
                     </CardHeader>
                     <CardContent className="flex flex-col items-center gap-4">
                         <div className="flex items-center gap-2 text-lg text-muted-foreground">
-                            <Loader2 className="animate-spin" />
-                            <span>La partie va bientôt commencer...</span>
+                            <Users className="mr-2" />
+                            <span>{blueSquads.length + redSquads.length} joueur(s) dans le salon</span>
                         </div>
                         <Button onClick={handleStartGame} disabled={!canStartGame}>
                             <Play className="mr-2" />
                             (Dev) Démarrer la partie
                         </Button>
+                         {!canStartGame && (
+                            <div className="flex items-center gap-2 text-sm text-amber-500">
+                                <Loader2 className="animate-spin" />
+                                <span>En attente d'un joueur dans chaque équipe...</span>
+                            </div>
+                         )}
                     </CardContent>
                 </Card>
 
