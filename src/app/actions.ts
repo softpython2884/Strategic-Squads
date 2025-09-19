@@ -5,7 +5,7 @@ import { implementAIUnitBehaviors, type AIUnitBehaviorsInput, type AIUnitBehavio
 import { summarizeGameEvents, type SummarizeGameEventsInput, type SummarizeGameEventsOutput } from "@/ai/flows/summarize-game-events";
 import { gameState } from "@/server/game-state";
 import type { Unit, UnitComposition } from "@/lib/types";
-import { broadcastGameState } from "@/server/game-loop";
+import { broadcastGameState } from "@/server/websocket-server";
 
 export type SquadUnit = Pick<Unit, 'id' | 'name' | 'type'>;
 

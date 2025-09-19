@@ -6,31 +6,11 @@
 'use server';
 
 import { gameState } from '@/server/game-state';
-import { clients } from './websocket-server';
-import { WebSocket } from 'ws';
+import { broadcastGameState } from './websocket-server';
 
 const TICK_RATE_MS = 250;
 let gameLoopInterval: NodeJS.Timeout | null = null;
 let tickCount = 0;
-
-export async function broadcastGameState() {
-    const currentState = {
-        type: 'update-state',
-        payload: gameState.getUnits(),
-    };
-    const message = JSON.stringify(currentState);
-
-    clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            try {
-                client.send(message);
-            } catch (e) {
-                console.error('Failed to send message to client:', e);
-            }
-        }
-    });
-}
-
 
 async function gameTick() {
   tickCount++;
