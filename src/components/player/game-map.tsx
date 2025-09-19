@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Shield, Swords, FlaskConical, Crosshair } from 'lucide-react';
+import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Unit, Team } from '@/lib/types';
 import { moveUnit } from '@/app/actions';
@@ -14,7 +14,7 @@ const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
     attaque: <Swords className="w-full h-full p-1" />,
     défense: <Shield className="w-full h-full p-1" />,
     capture: <Crosshair className="w-full h-full p-1" />,
-    recherche: <FlaskConical className="w-full h-full p-1" />,
+    escarmouche: <Wind className="w-full h-full p-1" />,
 };
 
 const GRID_SIZE = 10;

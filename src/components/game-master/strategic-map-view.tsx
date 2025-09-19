@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Shield, Swords, FlaskConical, Crosshair, TowerControl, Users, Heart } from "lucide-react";
+import { Shield, Swords, Wind, Crosshair, TowerControl, Users, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Unit, Team } from "@/lib/types";
 import { Progress } from "../ui/progress";
@@ -10,7 +10,7 @@ const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
   attaque: <Swords className="w-4 h-4" />,
   défense: <Shield className="w-4 h-4" />,
   capture: <Crosshair className="w-4 h-4" />,
-  recherche: <FlaskConical className="w-4 h-4" />,
+  escarmouche: <Wind className="w-4 h-4" />,
 };
 
 const objectives = [

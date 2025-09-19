@@ -1,5 +1,5 @@
 
-export type UnitComposition = 'attaque' | 'défense' | 'capture' | 'recherche';
+export type UnitComposition = 'attaque' | 'défense' | 'capture' | 'escarmouche';
 
 export type UnitStatus = 'alive' | 'down' | 'dead';
 

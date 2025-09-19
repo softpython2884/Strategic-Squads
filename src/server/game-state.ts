@@ -55,7 +55,7 @@ const unitCompositionData = [
     { composition: "Attaque", blue: 2, red: 3 },
     { composition: "Défense", blue: 1, red: 1 },
     { composition: "Capture", blue: 1, red: 1 },
-    { composition: "Recherche", blue: 1, red: 1 },
+    { composition: "Escarmouche", blue: 1, red: 1 },
 ];
 
 

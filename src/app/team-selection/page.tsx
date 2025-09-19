@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, ArrowLeft, Shield, Swords, Crosshair, FlaskConical, User, ChevronsRight } from 'lucide-react';
+import { Bot, ArrowLeft, Shield, Swords, Crosshair, Wind, User, ChevronsRight } from 'lucide-react';
 import { gameState } from '@/server/game-state';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ const squads = [
     { type: 'attaque', icon: Swords, count: 2, description: "Unités offensives pour percer les défenses." },
     { type: 'défense', icon: Shield, count: 2, description: "Unités robustes pour protéger les objectifs." },
     { type: 'capture', icon: Crosshair, count: 1, description: "Unités rapides pour capturer des points stratégiques." },
-    { type: 'recherche', icon: FlaskConical, count: 1, description: "Unités qui accélèrent les améliorations de l'équipe." },
+    { type: 'escarmouche', icon: Wind, count: 1, description: "Unités agiles pour harceler et éliminer les cibles isolées." },
 ]
 
 type SelectionStep = 'pseudo' | 'team' | 'squad';

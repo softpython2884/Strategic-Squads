@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { Shield, Swords, Crosshair, FlaskConical, User, Loader2, Play, Users } from 'lucide-react';
+import { Shield, Swords, Crosshair, Wind, User, Loader2, Play, Users } from 'lucide-react';
 import type { Unit, Team } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 
@@ -15,7 +15,7 @@ const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
   attaque: <Swords className="w-4 h-4" />,
   défense: <Shield className="w-4 h-4" />,
   capture: <Crosshair className="w-4 h-4" />,
-  recherche: <FlaskConical className="w-4 h-4" />,
+  escarmouche: <Wind className="w-4 h-4" />,
 };
 
 type PlayerSquad = {
