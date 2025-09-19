@@ -9,7 +9,7 @@ const WS_PORT = 8080;
 let wss: WebSocketServer | null = null;
 export const clients = new Set<WebSocket>();
 
-export function startWebSocketServer() {
+export async function startWebSocketServer() {
   if (wss) {
     console.log('WebSocket server is already running.');
     return;
