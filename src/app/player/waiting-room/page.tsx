@@ -69,7 +69,10 @@ export default function WaitingRoomPage() {
     const [allUnits, setAllUnits] = useState<Unit[]>([]);
 
     useEffect(() => {
-        const ws = new WebSocket('ws://localhost:8080');
+        // Dynamically determine the WebSocket URL based on the current hostname.
+        // This ensures it works in both local dev and deployed environments.
+        const wsUrl = `ws://${window.location.hostname}:8080`;
+        const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             console.log('WebSocket connection established');
