@@ -9,4 +9,5 @@ import { startGameLoop } from '@/server/game-loop';
 
 // Start the WebSocket server
 startWebSocketServer();
+// Start the main game loop
 startGameLoop();
