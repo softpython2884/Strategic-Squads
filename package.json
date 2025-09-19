@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm:genkit:dev\" \"next dev --turbopack -p 9002\"",
-    "genkit:dev": "tsx src/ai/dev.ts",
+    "start:web": "next dev --turbopack -p 9002",
+    "start:game": "tsx src/ai/dev.ts",
     "genkit:watch": "tsx --watch src/ai/dev.ts",
     "build": "next build",
     "start": "next start",
