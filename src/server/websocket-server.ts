@@ -13,6 +13,7 @@ type ServerAction =
     | { type: 'joinGame', payload: JoinGameInput }
     | { type: 'moveUnit', payload: { playerId: string, unitId: string, position: { x: number, y: number } } }
     | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
+    | { type: 'startGame' };
 
 
 // This emitter is no longer needed for cross-process communication.
@@ -112,6 +113,10 @@ function handleServerAction(action: ServerAction) {
                 // The game loop will broadcast the state change
             }
             break;
+        case 'startGame':
+            console.log('[Game Server] Handling startGame');
+            broadcastGameStart();
+            break;
     }
 }
 
@@ -138,6 +143,19 @@ export async function broadcastGameState() {
         }
     });
 }
+
+async function broadcastGameStart() {
+    if (!wss && clients.size === 0) return;
+
+    const message = JSON.stringify({ type: 'game-started' });
+    console.log('Broadcasting game-started to all clients.');
+    clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
+}
+
 
 /**
  * Broadcasts an action from the web server process to the game server process.

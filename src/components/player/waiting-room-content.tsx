@@ -2,7 +2,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -66,31 +66,40 @@ export default function WaitingRoomContent() {
 
     const [units, setUnits] = useState<Unit[]>([]);
     const [teams, setTeams] = useState<{ [key: string]: Team }>({});
+    const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        const wsUrl = `ws://${window.location.hostname}:8080`;
-        console.log(`Connecting to WebSocket at ${wsUrl}`);
-        const ws = new WebSocket(wsUrl);
+        if (!ws.current) {
+            const wsUrl = `ws://${window.location.hostname}:8080`;
+            console.log(`Connecting to WebSocket at ${wsUrl}`);
+            const webSocket = new WebSocket(wsUrl);
+            ws.current = webSocket;
 
-        ws.onopen = () => console.log('WaitingRoom WebSocket connected');
+            webSocket.onopen = () => console.log('WaitingRoom WebSocket connected');
 
-        ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            if (message.type === 'full-state' || message.type === 'update-state') {
-                setUnits(message.payload.units);
-                setTeams(message.payload.teams);
-            }
-        };
+            webSocket.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.type === 'full-state' || message.type === 'update-state') {
+                    setUnits(message.payload.units);
+                    setTeams(message.payload.teams);
+                } else if (message.type === 'game-started') {
+                    // All clients will navigate upon receiving this message
+                    const params = new URLSearchParams(window.location.search);
+                    router.push(`/player/game?${params.toString()}`);
+                }
+            };
 
-        ws.onclose = () => console.log('WaitingRoom WebSocket disconnected');
-        ws.onerror = (error) => console.error('WaitingRoom WebSocket error:', error);
+            webSocket.onclose = () => console.log('WaitingRoom WebSocket disconnected');
+            webSocket.onerror = (error) => console.error('WaitingRoom WebSocket error:', error);
+        }
 
         return () => {
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
+            // Only close the connection when the component unmounts
+            if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+                // ws.current.close(); // Keep it open for navigation
             }
         };
-    }, []); 
+    }, [router]); 
 
 
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
@@ -124,8 +133,9 @@ export default function WaitingRoomContent() {
     const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
     const handleStartGame = () => {
-        const params = new URLSearchParams(searchParams);
-        router.push(`/player/game?${params.toString()}`);
+        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify({ type: 'startGame' }));
+        }
     }
 
     return (
