@@ -17,9 +17,7 @@ const teams: { [key: string]: Team } = {
   },
 };
 
-const initialUnits: Unit[] = [
-  // No initial units, the game will be populated by players joining.
-];
+const initialUnits: Unit[] = [];
 
 const gameEventsLog = `
 [00:15] Début de la partie. Les portes sont ouvertes.

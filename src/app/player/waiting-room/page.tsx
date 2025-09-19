@@ -2,8 +2,9 @@
 'use client'
 
 import { useSearchParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { gameState } from "@/server/game-state"
+import { gameState as serverGameState } from "@/server/game-state"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -63,11 +64,41 @@ export default function WaitingRoomPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
+    
+    // Client-side state for units, updated via WebSocket
+    const [allUnits, setAllUnits] = useState<Unit[]>([]);
 
-    // Always get the full, live state from the server-side gameState
-    const teams = gameState.getTeams();
-    const allUnits = gameState.getUnits();
+    useEffect(() => {
+        const ws = new WebSocket('ws://localhost:8080');
 
+        ws.onopen = () => {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'full-state' || message.type === 'update-state') {
+                setAllUnits(message.payload);
+            }
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        }
+
+        // Cleanup on component unmount
+        return () => {
+            ws.close();
+        };
+    }, []);
+
+    // Get static team info from server
+    const teams = serverGameState.getTeams();
+    
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
         const teamUnits = allUnits.filter(u => u.teamId === teamId);
         if (teamUnits.length === 0) return [];
@@ -97,7 +128,8 @@ export default function WaitingRoomPage() {
     const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
     const handleStartGame = () => {
-        // Pass the current player's pseudo to the game page
+        // Here we would ideally trigger a "start-game" event via WebSocket
+        // For now, we just navigate the current player.
         const params = new URLSearchParams(searchParams);
         router.push(`/player/game?${params.toString()}`);
     }

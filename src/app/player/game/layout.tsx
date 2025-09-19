@@ -18,8 +18,11 @@ export default function PlayerGameLayout({
   const searchParams = useSearchParams();
   const pseudo = searchParams.get('pseudo');
 
+  // Since this is a layout, it might render before the client-side state is populated.
+  // We'll rely on the pseudo from the URL and do a lookup in the server state,
+  // but this info might be slightly stale if the component doesn't re-render.
+  // The main page content will use live WebSocket data.
   const teams = gameState.getTeams();
-  // Find ONE of the player's units in the game state to determine their team and squad type
   const playerUnit = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
   const teamId = playerUnit?.teamId;
   const squadType = playerUnit?.composition;

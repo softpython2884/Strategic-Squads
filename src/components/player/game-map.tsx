@@ -21,50 +21,46 @@ const GRID_SIZE = 10;
 const CELL_SIZE = 60; // in pixels
 
 type GameMapProps = {
-    initialPlayerUnits: Unit[];
-    initialOtherUnits: Unit[];
+    playerUnits: Unit[];
+    otherUnits: Unit[];
     teams: { [key: string]: Team };
 };
 
-export default function GameMap({ initialPlayerUnits, initialOtherUnits, teams }: GameMapProps) {
+export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps) {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
 
-    const [playerUnits, setPlayerUnits] = useState(initialPlayerUnits);
-    const [otherUnits, setOtherUnits] = useState(initialOtherUnits);
+    // Combine units for rendering
+    const allUnits = [...playerUnits, ...otherUnits];
 
-    // This is a DEV ONLY effect to simulate movement
+    // Example of client-side logic to trigger a move
+    // In a real game, this would be triggered by player input (e.g., clicking on the map)
     useEffect(() => {
         if (!pseudo || playerUnits.length === 0) return;
 
-        const unitToMove = playerUnits[0]; // Move the first unit for testing
+        const unitToMove = playerUnits[0];
         
-        const interval = setInterval(async () => {
+        const handleMapClick = async () => {
             const newX = Math.floor(Math.random() * GRID_SIZE) + 1;
             const newY = Math.floor(Math.random() * GRID_SIZE) + 1;
 
             try {
-                // Call the server action to update the position
-                const updatedUnit = await moveUnit(pseudo, unitToMove.id, { x: newX, y: newY });
-                
-                if (updatedUnit) {
-                    // Update local state to reflect the change on the UI
-                    setPlayerUnits(prevUnits =>
-                        prevUnits.map(u => (u.id === updatedUnit.id ? updatedUnit : u))
-                    );
-                }
+                // Call the server action to request a move
+                await moveUnit(pseudo, unitToMove.id, { x: newX, y: newY });
+                // Note: The client does not update its state directly.
+                // It will wait for the WebSocket broadcast to receive the new state.
             } catch (error) {
-                console.error("Failed to move unit:", error);
-                // Optional: show a toast to the user
+                console.error("Failed to request unit move:", error);
             }
-
-        }, 2000); // Move every 2 seconds
+        };
+        
+        // Simulate a click every 3 seconds for demonstration
+        const interval = setInterval(handleMapClick, 3000);
 
         return () => clearInterval(interval);
+
     }, [pseudo, playerUnits]);
 
-
-    const allUnits = [...playerUnits, ...otherUnits];
 
     return (
         <TooltipProvider>
@@ -73,6 +69,8 @@ export default function GameMap({ initialPlayerUnits, initialOtherUnits, teams }
                 style={{
                     width: GRID_SIZE * CELL_SIZE,
                     height: GRID_SIZE * CELL_SIZE,
+                    minWidth: GRID_SIZE * CELL_SIZE,
+                    minHeight: GRID_SIZE * CELL_SIZE,
                 }}
             >
                 {/* Grid Lines */}
@@ -105,7 +103,7 @@ export default function GameMap({ initialPlayerUnits, initialOtherUnits, teams }
                         >
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <div className="flex items-center justify-center w-full h-full p-2">
+                                    <div className="flex items-center justify-center w-full h-full p-2 cursor-pointer">
                                         <div
                                             className={cn(
                                                 "flex items-center justify-center w-10 h-10 rounded-full z-10 shadow-lg",

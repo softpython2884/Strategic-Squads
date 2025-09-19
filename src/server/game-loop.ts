@@ -5,10 +5,31 @@
 'use server';
 
 import { gameState } from '@/server/game-state';
+import { clients } from './websocket-server';
+import { WebSocket } from 'ws';
 
 const TICK_RATE_MS = 250;
 let gameLoopInterval: NodeJS.Timeout | null = null;
 let tickCount = 0;
+
+export function broadcastGameState() {
+    const currentState = {
+        type: 'update-state',
+        payload: gameState.getUnits(),
+    };
+    const message = JSON.stringify(currentState);
+
+    clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            try {
+                client.send(message);
+            } catch (e) {
+                console.error('Failed to send message to client:', e);
+            }
+        }
+    });
+}
+
 
 function gameTick() {
   tickCount++;
@@ -16,13 +37,15 @@ function gameTick() {
 
   // Process cooldowns for all units
   gameState.processCooldowns();
+  
+  // Broadcast the latest state to all clients
+  broadcastGameState();
 
   // Future logic will go here:
   // - Process player inputs/intents
   // - Update unit positions and states
   // - Run AI behaviors
   // - Check for win/loss conditions
-  // - Broadcast state changes to clients (via WebSockets)
 }
 
 /**

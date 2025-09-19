@@ -3,10 +3,11 @@
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { gameState } from './game-state';
+import { broadcastGameState } from './game-loop';
 
 const WS_PORT = 8080;
 let wss: WebSocketServer | null = null;
-const clients = new Set<WebSocket>();
+export const clients = new Set<WebSocket>();
 
 export function startWebSocketServer() {
   if (wss) {
@@ -49,28 +50,4 @@ export function startWebSocketServer() {
   wss.on('error', (error) => {
     console.error('WebSocket Server error:', error);
   });
-}
-
-export function broadcastGameState() {
-    if (!wss) {
-        console.warn("Attempted to broadcast, but WebSocket server is not running.");
-        return;
-    }
-
-    const currentState = {
-        type: 'update-state',
-        payload: gameState.getUnits(),
-    };
-    const message = JSON.stringify(currentState);
-
-    console.log(`Broadcasting game state to ${clients.size} clients.`);
-    clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            try {
-                client.send(message);
-            } catch (e) {
-                console.error('Failed to send message to client:', e);
-            }
-        }
-    });
 }

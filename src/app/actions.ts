@@ -5,6 +5,7 @@ import { implementAIUnitBehaviors, type AIUnitBehaviorsInput, type AIUnitBehavio
 import { summarizeGameEvents, type SummarizeGameEventsInput, type SummarizeGameEventsOutput } from "@/ai/flows/summarize-game-events";
 import { gameState } from "@/server/game-state";
 import type { Unit, UnitComposition } from "@/lib/types";
+import { broadcastGameState } from "@/server/game-loop";
 
 export type SquadUnit = Pick<Unit, 'id' | 'name' | 'type'>;
 
@@ -18,6 +19,8 @@ export interface JoinGameInput {
 export async function joinGame(input: JoinGameInput): Promise<void> {
   try {
     gameState.addPlayerSquad(input);
+    // After updating the state, broadcast it to all clients
+    broadcastGameState();
   } catch (error) {
     console.error("Error in joinGame:", error);
     throw new Error("Failed to join the game on the server.");
@@ -74,8 +77,9 @@ export async function moveUnit(playerId: string, unitId: string, position: { x: 
         console.log(`Moving unit ${unitId} to ${position.x}, ${position.y} for player ${playerId}`);
         const updatedUnit = gameState.updateUnitPosition(unitId, position.x, position.y);
         
-        // In a real WebSocket implementation, this is where you'd broadcast the update.
-        // For now, we return the updated unit to the client that initiated the move.
+        // Broadcast the new state to all clients
+        broadcastGameState();
+        
         return updatedUnit || null;
 
     } catch (error: any) {

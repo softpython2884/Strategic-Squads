@@ -77,9 +77,6 @@ export default function PlayerDashboardPage() {
         squad: squad as SquadUnit[],
       });
       
-      // Force a server data refresh before navigating
-      router.refresh();
-      
       // Navigate to waiting room with only the pseudo for identification
       const params = new URLSearchParams({ pseudo });
       router.push(`/player/waiting-room?${params.toString()}`);
