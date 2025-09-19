@@ -5,7 +5,7 @@ import { implementAIUnitBehaviors, type AIUnitBehaviorsInput, type AIUnitBehavio
 import { summarizeGameEvents, type SummarizeGameEventsInput, type SummarizeGameEventsOutput } from "@/ai/flows/summarize-game-events";
 import { gameState } from "@/server/game-state";
 import type { Unit, UnitComposition } from "@/lib/types";
-import { broadcastGameState } from "@/server/websocket-server";
+import { broadcastActionToServer, broadcastGameState } from "@/server/websocket-server";
 
 export type SquadUnit = Pick<Unit, 'id' | 'name' | 'type'>;
 
@@ -18,12 +18,15 @@ export interface JoinGameInput {
 
 export async function joinGame(input: JoinGameInput): Promise<void> {
   try {
-    gameState.addPlayerSquad(input);
-    // After updating the state, broadcast it to all clients
-    await broadcastGameState();
+    // Instead of modifying the state directly, we broadcast an action to the game server.
+    await broadcastActionToServer({
+        type: 'joinGame',
+        payload: input,
+    });
+    // The game server will process the action and then broadcast the new state.
   } catch (error) {
-    console.error("Error in joinGame:", error);
-    throw new Error("Failed to join the game on the server.");
+    console.error("Error in joinGame action:", error);
+    throw new Error("Failed to send joinGame action to the server.");
   }
 }
 
@@ -49,41 +52,30 @@ export async function runSummarizeGameEvents(input: SummarizeGameEventsInput): P
 
 export async function useSkill(playerId: string, unitId: string, skillId: string): Promise<boolean> {
   try {
-    const unit = gameState.getUnits().find(u => u.id === unitId);
-    if (!unit || unit.control.controllerPlayerId !== playerId) {
-      // Basic authorization: ensure the player controls the unit
-      throw new Error("Player does not control this unit.");
-    }
-    
-    const FIVE_SECONDS_IN_TICKS = 5 * (1000 / 250); // 20 ticks
-    const result = gameState.useSkill(unitId, skillId, FIVE_SECONDS_IN_TICKS);
-    
-    return result;
-
+     // Broadcast this action to the game server to handle
+     await broadcastActionToServer({
+        type: 'useSkill',
+        payload: { playerId, unitId, skillId },
+     });
+     return true; // Assume success, the server will broadcast the result
   } catch (error: any) {
-    console.error("Error in useSkill:", error.message);
-    // In a real app, you might not want to throw the raw error to the client
-    throw new Error(`Failed to use skill: ${error.message}`);
+    console.error("Error in useSkill action:", error.message);
+    throw new Error(`Failed to send useSkill action: ${error.message}`);
   }
 }
 
 export async function moveUnit(playerId: string, unitId: string, position: { x: number, y: number }): Promise<Unit | null> {
     try {
-        const unit = gameState.getUnits().find(u => u.id === unitId);
-        if (!unit || unit.control.controllerPlayerId !== playerId) {
-            throw new Error("Player does not control this unit.");
-        }
-        
-        console.log(`Moving unit ${unitId} to ${position.x}, ${position.y} for player ${playerId}`);
-        const updatedUnit = gameState.updateUnitPosition(unitId, position.x, position.y);
-        
-        // Broadcast the new state to all clients
-        await broadcastGameState();
-        
-        return updatedUnit || null;
+        // Broadcast this action to the game server
+        await broadcastActionToServer({
+            type: 'moveUnit',
+            payload: { playerId, unitId, position },
+        });
+        // The client will receive the update via WebSocket broadcast, so we don't need to return anything here.
+        return null;
 
-    } catch (error: any) {
-        console.error("Error in moveUnit:", error.message);
-        throw new Error(`Failed to move unit: ${error.message}`);
+    } catch (error: any)        {
+        console.error("Error in moveUnit action:", error.message);
+        throw new Error(`Failed to send moveUnit action: ${error.message}`);
     }
 }
