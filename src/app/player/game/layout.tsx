@@ -3,9 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { gameState } from '@/server/game-state';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Bot, Shield, User } from 'lucide-react';
 
@@ -15,19 +13,8 @@ export default function PlayerGameLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const searchParams = useSearchParams();
-  const pseudo = searchParams.get('pseudo');
-
-  // Since this is a layout, it might render before the client-side state is populated.
-  // We'll rely on the pseudo from the URL and do a lookup in the server state,
-  // but this info might be slightly stale if the component doesn't re-render.
-  // The main page content will use live WebSocket data.
-  const teams = gameState.getTeams();
-  const playerUnit = gameState.getUnits().find(u => u.control.controllerPlayerId === pseudo);
-  const teamId = playerUnit?.teamId;
-  const squadType = playerUnit?.composition;
-  
-  const team = teamId ? teams[teamId as keyof typeof teams] : undefined;
+  // NOTE: Removed useSearchParams to fix build error.
+  // The player's specific info will be shown within the game UI itself, not the layout.
   
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -45,18 +32,6 @@ export default function PlayerGameLayout({
         </div>
 
         <div className="flex items-center gap-4">
-            {pseudo && team && squadType && (
-                 <div className={cn("flex items-center gap-4 rounded-md p-2 text-sm", team.bgClass, team.textClass)}>
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span className='font-bold'>{pseudo}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                         <Shield className="w-4 h-4" />
-                        <span className='font-bold capitalize'>{squadType}</span>
-                    </div>
-                 </div>
-            )}
              <Button asChild variant="outline">
               <Link href="/lobby">
                 <ArrowLeft className="mr-2" />
