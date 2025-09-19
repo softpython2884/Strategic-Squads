@@ -85,13 +85,12 @@ export default function WaitingRoomContent() {
         ws.onclose = () => console.log('WaitingRoom WebSocket disconnected');
         ws.onerror = (error) => console.error('WaitingRoom WebSocket error:', error);
 
-        // This is the cleanup function that will be called when the component unmounts.
         return () => {
-            if (ws.readyState === WebSocket.OPEN) {
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();
             }
         };
-    }, []); // Empty dependency array means this effect runs once on mount.
+    }, []); 
 
 
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
@@ -118,8 +117,9 @@ export default function WaitingRoomContent() {
 
     const blueSquads = getSquadsByTeam('blue');
     const redSquads = getSquadsByTeam('red');
-    const blueTeam = teams.blue || { name: 'Équipe Bleue', color: '#3b82f6' };
-    const redTeam = teams.red || { name: 'Équipe Rouge', color: '#ef4444' };
+    const blueTeam = teams.blue || { name: 'Équipe Bleue', color: '#3b82f6', bgClass: "bg-blue-500", textClass: "text-blue-50" };
+    const redTeam = teams.red || { name: 'Équipe Rouge', color: '#ef4444', bgClass: "bg-red-500", textClass: "text-red-50" };
+
 
     const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
