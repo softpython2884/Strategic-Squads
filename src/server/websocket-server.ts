@@ -15,8 +15,8 @@ type ServerAction =
     | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
 
 
-// A simple message bus for communication between the web server process and the game server process.
-// This is a workaround for the fact that we have two separate node processes in production.
+// This emitter is no longer needed for cross-process communication.
+// It can be removed or kept for intra-process communication if needed later.
 const actionEmitter = {
     listeners: [] as ((action: ServerAction) => void)[],
     subscribe(listener: (action: ServerAction) => void) {
@@ -37,12 +37,6 @@ export async function startWebSocketServer() {
     console.log('WebSocket server is already running.');
     return;
   }
-
-  // Subscribe to actions emitted from the web server process
-  actionEmitter.subscribe((action) => {
-    console.log(`[Game Server] Received action: ${action.type}`);
-    handleServerAction(action);
-  });
 
   wss = new WebSocketServer({ port: WS_PORT });
 
@@ -68,6 +62,15 @@ export async function startWebSocketServer() {
         console.error('Failed to send initial state:', e);
     }
 
+    ws.on('message', (message) => {
+      try {
+        const action = JSON.parse(message.toString()) as ServerAction;
+        console.log(`[Game Server] Received action from client: ${action.type}`);
+        handleServerAction(action);
+      } catch (error) {
+        console.error("Failed to parse message from client:", error);
+      }
+    });
 
     ws.on('close', () => {
       console.log('Client disconnected.');
@@ -89,14 +92,15 @@ function handleServerAction(action: ServerAction) {
         case 'joinGame':
             console.log(`[Game Server] Handling joinGame for ${action.payload.pseudo}`);
             gameState.addPlayerSquad(action.payload);
-            broadcastGameState();
+            // The state change will be broadcasted to all clients, including the one who just joined.
+            broadcastGameState(); 
             break;
         case 'moveUnit':
             console.log(`[Game Server] Handling moveUnit for ${action.payload.unitId}`);
             const unit = gameState.getUnits().find(u => u.id === action.payload.unitId);
             if (unit && unit.control.controllerPlayerId === action.payload.playerId) {
                 gameState.updateUnitPosition(action.payload.unitId, action.payload.position.x, action.payload.position.y);
-                broadcastGameState();
+                // No need to broadcast here, the game loop does it
             }
             break;
         case 'useSkill':
@@ -137,7 +141,10 @@ export async function broadcastGameState() {
 
 /**
  * Broadcasts an action from the web server process to the game server process.
+ * This is now DEPRECATED in favor of client->server WebSocket messages.
  */
 export async function broadcastActionToServer(action: ServerAction) {
-    actionEmitter.emit(action);
+    // This function is now a no-op as the architecture has changed.
+    // The client sends messages directly to the WebSocket server.
+    console.warn(`broadcastActionToServer is deprecated. Action '${action.type}' should be sent from client via WebSocket.`);
 }

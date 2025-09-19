@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Hourglass, Loader2, UserPlus, XSquare } from 'lucide-react';
 import { UnitSelectionModal } from '@/components/player/unit-selection-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { joinGame, type SquadUnit } from '@/app/actions';
+import { type SquadUnit, type JoinGameInput } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -69,26 +69,43 @@ export default function PlayerDashboardContent() {
     
     setIsLoading(true);
 
-    try {
-      await joinGame({
-        pseudo,
-        teamId: teamId as 'blue' | 'red',
-        squadType: squadType as any,
-        squad: squad as SquadUnit[],
-      });
-      
-      // Navigate to waiting room with only the pseudo for identification
+    const joinGameInput: JoinGameInput = {
+      pseudo,
+      teamId: teamId as 'blue' | 'red',
+      squadType: squadType as any,
+      squad: squad as SquadUnit[],
+    };
+
+    const ws = new WebSocket(`ws://${window.location.hostname}:8080`);
+
+    ws.onopen = () => {
+      console.log('Dashboard WebSocket connected to send joinGame action');
+      const message = {
+        type: 'joinGame',
+        payload: joinGameInput,
+      };
+      ws.send(JSON.stringify(message));
+
+      // Don't wait for a response, just navigate.
+      // The waiting room will get the updated state from its own connection.
       const params = new URLSearchParams({ pseudo });
       router.push(`/player/waiting-room?${params.toString()}`);
+      
+      // We can close this connection as its only purpose was to send the message
+      ws.close(); 
+    };
 
-    } catch (error) {
-      console.error("Failed to join game:", error);
+    ws.onerror = (error) => {
+      console.error("Failed to connect to WebSocket to join game:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de rejoindre la partie. Veuillez réessayer.",
+        title: "Erreur de connexion",
+        description: "Impossible de communiquer avec le serveur de jeu. Veuillez réessayer.",
       });
-    } finally {
+      setIsLoading(false);
+    };
+
+    ws.onclose = () => {
         setIsLoading(false);
     }
   }

@@ -16,17 +16,20 @@ export interface JoinGameInput {
   squad: SquadUnit[];
 }
 
+
+// This action is now handled directly by the WebSocket server.
+// The client will send a 'joinGame' message over WebSocket.
 export async function joinGame(input: JoinGameInput): Promise<void> {
   try {
-    // Instead of modifying the state directly, we broadcast an action to the game server.
-    await broadcastActionToServer({
-        type: 'joinGame',
-        payload: input,
-    });
-    // The game server will process the action and then broadcast the new state.
+    // Instead of modifying the state directly or using the emitter,
+    // we now expect the client to handle this via WebSocket.
+    // This server action can be deprecated or kept for other potential HTTP-based interactions.
+    // For now, we'll log that it was called, but the real work is on the client/ws-server.
+    console.log(`joinGame server action called for ${input.pseudo}, but this should be handled by WebSocket now.`);
+
   } catch (error) {
     console.error("Error in joinGame action:", error);
-    throw new Error("Failed to send joinGame action to the server.");
+    throw new Error("Failed to process joinGame action.");
   }
 }
 
