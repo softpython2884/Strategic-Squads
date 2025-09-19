@@ -34,16 +34,17 @@ export default function WaitingRoomPage() {
     const team = teams[teamId as keyof typeof teams];
     const teamUnits = units.filter(u => u.teamId === teamId);
 
-    const playerGroups: { [key: string]: Unit[] } = {};
-    teamUnits.forEach(unit => {
+    const playerGroups = teamUnits.reduce((acc, unit) => {
         const playerId = unit.control.controllerPlayerId;
         if (playerId) {
-            if (!playerGroups[playerId]) {
-                playerGroups[playerId] = [];
+            if (!acc[playerId]) {
+                acc[playerId] = [];
             }
-            playerGroups[playerId].push(unit);
+            acc[playerId].push(unit);
         }
-    });
+        return acc;
+    }, {} as { [key: string]: Unit[] });
+
 
     const handleStartGame = () => {
         const params = new URLSearchParams(searchParams);
@@ -74,7 +75,7 @@ export default function WaitingRoomPage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                     {Object.entries(playerGroups).map(([playerId, squadUnits]) => {
                         const isCurrentUser = playerId === pseudo;
-                        const commanderName = squadUnits[0]?.control.controllerPlayerId || `Cmdr ${playerId}`;
+                        const commanderName = playerId;
                         const squadComposition = squadUnits[0]?.composition || 'attaque';
                         
                         return (
@@ -94,10 +95,10 @@ export default function WaitingRoomPage() {
                                         </Badge>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="p-4 space-y-4">
-                                     <h4 className="font-semibold text-muted-foreground">Unités de l'escouade :</h4>
+                                <CardContent className="p-4 space-y-3">
+                                     <h4 className="text-sm font-semibold text-muted-foreground">Unités de l'escouade :</h4>
                                      {squadUnits.map(unit => (
-                                        <div key={unit.id} className="flex items-center gap-3 p-2 rounded-md bg-muted/30">
+                                        <div key={unit.id} className="flex items-center gap-4 p-2 rounded-md bg-muted/30">
                                             <Avatar className="w-10 h-10">
                                                 <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.type}`} alt={unit.name}/>
                                                 <AvatarFallback>{unit.name.charAt(0)}</AvatarFallback>
