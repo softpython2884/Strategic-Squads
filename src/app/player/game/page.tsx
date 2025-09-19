@@ -5,14 +5,27 @@ import GameMap from "@/components/player/game-map";
 import { gameState as serverGameState } from "@/server/game-state";
 import { Unit } from "@/lib/types";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+function GameMapLoading() {
+    return (
+        <div className="w-full max-w-5xl border-2 rounded-lg border-primary overflow-hidden flex items-center justify-center aspect-square">
+            <div className="flex flex-col items-center gap-4 text-muted-foreground">
+                <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                <p>Chargement de la carte de jeu...</p>
+            </div>
+        </div>
+    );
+}
+
 
 export default function GamePage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
 
     const [units, setUnits] = useState<Unit[]>([]);
-    const teams = serverGameState.getTeams(); // Team data is static
+    const [teams, setTeams] = useState<{[key: string]: Team}>({});
 
     useEffect(() => {
         // Dynamically determine the WebSocket URL based on the current hostname.
@@ -24,7 +37,8 @@ export default function GamePage() {
         ws.onmessage = (event) => {
             const message = JSON.parse(event.data);
             if (message.type === 'full-state' || message.type === 'update-state') {
-                setUnits(message.payload);
+                setUnits(message.payload.units);
+                setTeams(message.payload.teams);
             }
         };
 
@@ -32,7 +46,9 @@ export default function GamePage() {
         ws.onerror = (error) => console.error('GamePage WebSocket error:', error);
 
         return () => {
-            ws.close();
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.close();
+            }
         };
     }, []);
     
@@ -45,13 +61,13 @@ export default function GamePage() {
     return (
         <main className="flex flex-col items-center justify-center flex-1 p-4">
             <h1 className="mb-4 text-2xl font-bold">Partie en cours</h1>
-            <div className="w-full max-w-5xl border-2 rounded-lg border-primary overflow-hidden">
+             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
                     playerUnits={playerUnits}
                     otherUnits={otherUnits}
                     teams={teams}
                 />
-            </div>
+            </Suspense>
             {/* HUD elements will go here */}
         </main>
     );
