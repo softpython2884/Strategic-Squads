@@ -28,7 +28,10 @@ export async function startWebSocketServer() {
     try {
         const initialState = {
             type: 'full-state',
-            payload: gameState.getUnits(),
+            payload: {
+                units: gameState.getUnits(),
+                teams: gameState.getTeams(),
+            }
         }
         ws.send(JSON.stringify(initialState));
     } catch(e) {
@@ -52,9 +55,13 @@ export async function startWebSocketServer() {
 }
 
 export async function broadcastGameState() {
+    if (!wss) return; // Don't broadcast if server isn't running
     const currentState = {
         type: 'update-state',
-        payload: gameState.getUnits(),
+        payload: {
+            units: gameState.getUnits(),
+            teams: gameState.getTeams(),
+        }
     };
     const message = JSON.stringify(currentState);
 
