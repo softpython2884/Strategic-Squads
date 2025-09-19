@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview The main game loop for the server.
  * This file handles the game's tick rate and processes game state updates.
@@ -12,7 +13,7 @@ const TICK_RATE_MS = 250;
 let gameLoopInterval: NodeJS.Timeout | null = null;
 let tickCount = 0;
 
-export function broadcastGameState() {
+export async function broadcastGameState() {
     const currentState = {
         type: 'update-state',
         payload: gameState.getUnits(),
@@ -31,7 +32,7 @@ export function broadcastGameState() {
 }
 
 
-function gameTick() {
+async function gameTick() {
   tickCount++;
   // console.log(`Game Tick #${tickCount} at ${new Date().toISOString()}`);
 
@@ -39,7 +40,7 @@ function gameTick() {
   gameState.processCooldowns();
   
   // Broadcast the latest state to all clients
-  broadcastGameState();
+  await broadcastGameState();
 
   // Future logic will go here:
   // - Process player inputs/intents
@@ -51,7 +52,7 @@ function gameTick() {
 /**
  * Starts the main game loop.
  */
-export function startGameLoop() {
+export async function startGameLoop() {
   if (gameLoopInterval) {
     console.log('Game loop is already running.');
     return;
@@ -66,7 +67,7 @@ export function startGameLoop() {
 /**
  * Stops the main game loop.
  */
-export function stopGameLoop() {
+export async function stopGameLoop() {
   if (gameLoopInterval) {
     console.log('Stopping game loop.');
     clearInterval(gameLoopInterval);

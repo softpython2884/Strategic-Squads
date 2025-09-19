@@ -20,7 +20,7 @@ export async function joinGame(input: JoinGameInput): Promise<void> {
   try {
     gameState.addPlayerSquad(input);
     // After updating the state, broadcast it to all clients
-    broadcastGameState();
+    await broadcastGameState();
   } catch (error) {
     console.error("Error in joinGame:", error);
     throw new Error("Failed to join the game on the server.");
@@ -78,7 +78,7 @@ export async function moveUnit(playerId: string, unitId: string, position: { x: 
         const updatedUnit = gameState.updateUnitPosition(unitId, position.x, position.y);
         
         // Broadcast the new state to all clients
-        broadcastGameState();
+        await broadcastGameState();
         
         return updatedUnit || null;
 
