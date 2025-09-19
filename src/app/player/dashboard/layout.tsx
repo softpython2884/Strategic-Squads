@@ -3,9 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { gameState } from '@/server/game-state';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, Bot, Shield, User } from 'lucide-react';
 
@@ -15,15 +13,8 @@ export default function PlayerDashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const searchParams = useSearchParams();
-  const pseudo = searchParams.get('pseudo');
-
-  // Since the player is not yet fully in the game state, we get info from URL
-  const teamId = searchParams.get('teamId');
-  const squadType = searchParams.get('squadType');
-  
-  const teams = gameState.getTeams();
-  const team = teamId ? teams[teamId as keyof typeof teams] : undefined;
+  // NOTE: Removed useSearchParams to fix build error.
+  // This layout is now static and doesn't display dynamic player info.
   
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -41,18 +32,6 @@ export default function PlayerDashboardLayout({
         </div>
 
         <div className="flex items-center gap-4">
-            {pseudo && team && squadType && (
-                 <div className={cn("flex items-center gap-4 rounded-md p-2 text-sm", team.bgClass, team.textClass)}>
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span className='font-bold'>{pseudo}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                         <Shield className="w-4 h-4" />
-                        <span className='font-bold capitalize'>{squadType}</span>
-                    </div>
-                 </div>
-            )}
              <Button asChild variant="outline">
               <Link href="/team-selection">
                 <ArrowLeft className="mr-2" />
