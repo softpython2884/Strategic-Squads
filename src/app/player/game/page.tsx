@@ -19,7 +19,7 @@ function GamePageLoading() {
 
 export default function GamePage() {
     return (
-        <Suspense fallback={<GamePageLoading />}>
+        <Suspense fallback={<GamePageLoading />} />
             <GamePageContent />
         </Suspense>
     );
