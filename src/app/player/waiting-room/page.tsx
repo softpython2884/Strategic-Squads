@@ -65,8 +65,6 @@ export default function WaitingRoomPage() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
     
-    // This page will now show the state as it was when the page loaded.
-    // Real-time updates are handled on the game page.
     const [allUnits, setAllUnits] = useState<Unit[]>(() => serverGameState.getUnits());
 
     useEffect(() => {
@@ -75,13 +73,13 @@ export default function WaitingRoomPage() {
 
         ws.onopen = () => {
             console.log('WebSocket connection established for waiting room');
-             // We can request a refresh of data on open if needed
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                if (message.type === 'full-state' || message.type === 'update-state') {
-                    setAllUnits(message.payload);
-                }
-            };
+        };
+        
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            if (message.type === 'full-state' || message.type === 'update-state') {
+                setAllUnits(message.payload);
+            }
         };
 
         ws.onclose = () => {
@@ -92,8 +90,11 @@ export default function WaitingRoomPage() {
             console.error('WebSocket error:', error);
         }
 
+        // This cleanup function will be called when the component unmounts
         return () => {
-            ws.close();
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
         };
     }, []);
 
