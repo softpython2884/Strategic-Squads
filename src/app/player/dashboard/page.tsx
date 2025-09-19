@@ -29,7 +29,7 @@ function PlayerDashboardLoading() {
 
 export default function PlayerDashboardPage() {
   return (
-    <Suspense fallback={<PlayerDashboardLoading />} />
+    <Suspense fallback={<PlayerDashboardLoading />}>
       <PlayerDashboardContent />
     </Suspense>
   );
