@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -21,7 +22,7 @@ type PlayerGroup = {
     units: Unit[];
 };
 
-const PlayerPortrait = ({ player, team }: { player: PlayerGroup, team: Team }) => {
+const PlayerPortrait = ({ player, team, isCurrentUser }: { player: PlayerGroup, team: Team, isCurrentUser: boolean }) => {
     const mainUnit = player.units[0];
     if (!mainUnit) return null;
 
@@ -40,7 +41,10 @@ const PlayerPortrait = ({ player, team }: { player: PlayerGroup, team: Team }) =
     const resourceStrokeDashoffset = circumference - (resourcePercentage / 100) * circumference;
 
     return (
-        <div className="relative flex items-center gap-3 p-2 rounded-lg bg-black/60 border border-white/10 pointer-events-auto cursor-pointer hover:bg-white/10">
+        <div className={cn(
+            "relative flex items-center gap-3 p-2 rounded-lg bg-black/60 border border-white/10 pointer-events-auto cursor-pointer hover:bg-white/10",
+            isCurrentUser && "border-primary"
+        )}>
             <div className="relative">
                 <Avatar className="w-14 h-14 border-2 border-background">
                     <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${mainUnit.control.controllerPlayerId}`} />
@@ -98,7 +102,7 @@ const PlayerPortrait = ({ player, team }: { player: PlayerGroup, team: Team }) =
     );
 };
 
-const TeamPanel = ({ teamMates, teams }: { teamMates: Unit[], teams: {[key: string]: Team} }) => {
+const TeamPanel = ({ teamMates, teams, currentPlayerId }: { teamMates: Unit[], teams: {[key: string]: Team}, currentPlayerId: string | null }) => {
     // Group units by player
     const playerGroups = teamMates.reduce((acc, unit) => {
         const playerId = unit.control.controllerPlayerId;
@@ -115,18 +119,33 @@ const TeamPanel = ({ teamMates, teams }: { teamMates: Unit[], teams: {[key: stri
     const teamId = players[0]?.units[0]?.teamId;
     const team = teamId ? teams[teamId] : null;
 
+    // Add current player to the top of the list
+    const currentPlayerUnits = teamMates.filter(u => u.control.controllerPlayerId === currentPlayerId);
+    const allPlayersInPanel = [];
+
+    if (currentPlayerId && currentPlayerUnits.length > 0) {
+        allPlayersInPanel.push({
+            playerId: currentPlayerId,
+            units: currentPlayerUnits,
+        });
+    }
+
+    const otherPlayers = players.filter(p => p.playerId !== currentPlayerId);
+    allPlayersInPanel.push(...otherPlayers);
+
+
     // Fill with empty slots to always show 4
-    while(players.length < 4) {
-        players.push({playerId: ``, units: []});
+    while(allPlayersInPanel.length < 4) {
+        allPlayersInPanel.push({playerId: ``, units: []});
     }
 
     if (!team) return null;
 
     return (
         <div className="absolute top-4 right-4 flex flex-col gap-2 w-52">
-            {players.slice(0,4).map((player, index) => (
+            {allPlayersInPanel.slice(0,4).map((player, index) => (
                player.units.length > 0 
-                ? <PlayerPortrait key={player.playerId} player={player} team={team} />
+                ? <PlayerPortrait key={player.playerId || index} player={player} team={team} isCurrentUser={player.playerId === currentPlayerId} />
                 : <div key={index} className="h-[76px] w-full bg-black/50 rounded-lg border border-white/10"></div>
             ))}
         </div>

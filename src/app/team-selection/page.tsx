@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -60,7 +61,7 @@ export default function TeamSelectionPage() {
         return squadsConfig.map(squad => {
             // Count players in the selected team that have this squad composition
             const currentCount = units
-                .filter(u => u.teamId === teamId && u.composition === squad.type)
+                .filter(u => u.teamId === teamId && u.composition === squad.type && u.control.controllerPlayerId)
                 .map(u => u.control.controllerPlayerId)
                 // Get unique player IDs
                 .filter((value, index, self) => self.indexOf(value) === index)

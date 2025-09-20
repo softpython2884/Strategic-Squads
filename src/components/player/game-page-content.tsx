@@ -35,10 +35,13 @@ export default function GamePageContent() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
 
+    // Server state
     const [units, setUnits] = useState<Unit[]>([]);
     const [teams, setTeams] = useState<{ [key: string]: Team }>({});
     const [gameTime, setGameTime] = useState(0);
     const [pings, setPings] = useState<Ping[]>([]);
+    
+    // Client-side state
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
     const [mapDimensions, setMapDimensions] = useState({ width: 2048, height: 2048 });
@@ -300,7 +303,7 @@ export default function GamePageContent() {
         return isVisible(unit.position);
     });
 
-    const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
+    const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId && u.control.controllerPlayerId !== pseudo) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
@@ -338,7 +341,7 @@ export default function GamePageContent() {
                     cameraPosition={cameraPosition}
                 />
                 <GameTimer remainingTime={gameTime} />
-                <TeamPanel teamMates={teamMates} teams={teams}/>
+                <TeamPanel teamMates={teamMates} teams={teams} currentPlayerId={pseudo} />
                 <ObjectivesPanel squadComposition={playerUnits[0]?.composition} />
                 <MiniMap 
                     units={units} 
