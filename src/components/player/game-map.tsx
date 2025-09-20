@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -10,6 +11,7 @@ import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
 import Image from 'next/image';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 import PingDisplay from './hud/ping-display';
+import TiledMapRenderer from './tiled-map-renderer';
 
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
@@ -41,6 +43,7 @@ type GameMapProps = {
     onAttack: (target: Unit | null, coords: { x: number, y: number }) => void;
     onSelectUnit: (unitId: string | null, isShiftHeld: boolean) => void;
     onSelectUnits: (unitIds: string[], isShiftHeld: boolean) => void;
+    mapDimensions: { width: number, height: number };
 };
 
 const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean }) => {
@@ -116,7 +119,8 @@ export default function GameMap({
     onMove, 
     onAttack,
     onSelectUnit,
-    onSelectUnits
+    onSelectUnits,
+    mapDimensions
 }: GameMapProps) {
     const allUnits = [...playerUnits, ...otherUnits];
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
@@ -137,12 +141,12 @@ export default function GameMap({
         const worldX = (viewX / zoom) + (cameraPosition.x - mapRect.width / (2 * zoom));
         const worldY = (viewY / zoom) + (cameraPosition.y - mapRect.height / (2 * zoom));
         
-        const targetX = (worldX / 2048) * 100;
-        const targetY = (worldY / 2048) * 100;
+        const targetX = (worldX / mapDimensions.width) * 100;
+        const targetY = (worldY / mapDimensions.height) * 100;
 
         const clickedUnit = allUnits.find(unit => {
-            const unitScreenX = (unit.position.x / 100) * 2048;
-            const unitScreenY = (unit.position.y / 100) * 2048;
+            const unitScreenX = (unit.position.x / 100) * mapDimensions.width;
+            const unitScreenY = (unit.position.y / 100) * mapDimensions.height;
             const distance = Math.sqrt(Math.pow(worldX - unitScreenX, 2) + Math.pow(worldY - unitScreenY, 2));
             return distance < 32;
         });
@@ -219,8 +223,8 @@ export default function GameMap({
         const selectedIds: string[] = [];
         playerUnits.forEach(unit => {
             // Convert unit world position to screen position
-            const unitScreenX = (unit.position.x / 100 * 2048 - (cameraPosition.x - mapRect.width / (2 * zoom))) * zoom;
-            const unitScreenY = (unit.position.y / 100 * 2048 - (cameraPosition.y - mapRect.height / (2 * zoom))) * zoom;
+            const unitScreenX = (unit.position.x / 100 * mapDimensions.width - (cameraPosition.x - mapRect.width / (2 * zoom))) * zoom;
+            const unitScreenY = (unit.position.y / 100 * mapDimensions.height - (cameraPosition.y - mapRect.height / (2 * zoom))) * zoom;
 
             if (unitScreenX >= startX && unitScreenX <= endX && unitScreenY >= startY && unitScreenY <= endY) {
                 selectedIds.push(unit.id);
@@ -259,7 +263,11 @@ export default function GameMap({
                 onMouseLeave={() => setIsDragging(false)}
             >
                 <motion.div
-                    className="relative w-[2048px] h-[2048px] origin-top-left"
+                    className="relative origin-top-left"
+                    style={{
+                        width: mapDimensions.width,
+                        height: mapDimensions.height,
+                    }}
                      animate={{
                         scale: zoom,
                         x: -cameraPosition.x * zoom + (mapContainerRef.current?.clientWidth ?? 0) / 2,
@@ -267,15 +275,7 @@ export default function GameMap({
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
-                    <Image
-                        src="https://picsum.photos/seed/map/2048/2048"
-                        alt="Game Map"
-                        layout="fill"
-                        objectFit="cover"
-                        className="absolute inset-0 object-cover opacity-50 pointer-events-none"
-                        data-ai-hint="fantasy map"
-                        priority
-                    />
+                    <TiledMapRenderer />
 
                     <AnimatePresence>
                         {allUnits.map((unit) => (
@@ -283,12 +283,12 @@ export default function GameMap({
                                 key={unit.id}
                                 layout
                                 initial={{
-                                    left: `${unit.position.x / 100 * 2048}px`,
-                                    top: `${unit.position.y / 100 * 2048}px`,
+                                    left: `${(unit.position.x / 100) * mapDimensions.width}px`,
+                                    top: `${(unit.position.y / 100) * mapDimensions.height}px`,
                                 }}
                                 animate={{
-                                    left: `calc(${unit.position.x / 100 * 2048}px)`,
-                                    top: `calc(${unit.position.y / 100 * 2048}px)`,
+                                    left: `calc(${(unit.position.x / 100) * mapDimensions.width}px)`,
+                                    top: `calc(${(unit.position.y / 100) * mapDimensions.height}px)`,
                                 }}
                                 transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
                                 className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
@@ -310,8 +310,8 @@ export default function GameMap({
                                 key={ping.id} 
                                 className="absolute"
                                 style={{
-                                    left: `calc(${ping.x / 100 * 2048}px)`,
-                                    top: `calc(${ping.y / 100 * 2048}px)`,
+                                    left: `calc(${(ping.x / 100) * mapDimensions.width}px)`,
+                                    top: `calc(${(ping.y / 100) * mapDimensions.height}px)`,
                                 }}
                             >
                                 <PingDisplay />
@@ -325,5 +325,3 @@ export default function GameMap({
         </TooltipProvider>
     );
 }
-
-    

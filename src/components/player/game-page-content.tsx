@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useEffect, useState, Suspense, useCallback, useRef } from 'react';
@@ -28,7 +29,6 @@ function GameMapLoading() {
 }
 
 const PING_DURATION_MS = 5000;
-const MAP_DIMENSIONS = { width: 2048, height: 2048 };
 const VISION_RADIUS = 15;
 
 export default function GamePageContent() {
@@ -41,15 +41,25 @@ export default function GamePageContent() {
     const [pings, setPings] = useState<Ping[]>([]);
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
+    const [mapDimensions, setMapDimensions] = useState({ width: 2048, height: 2048 });
     
     // Camera state
     const [zoom, setZoom] = useState(1.0);
-    const [cameraPosition, setCameraPosition] = useState({ x: MAP_DIMENSIONS.width / 2, y: MAP_DIMENSIONS.height / 2 });
+    const [cameraPosition, setCameraPosition] = useState({ x: mapDimensions.width / 2, y: mapDimensions.height / 2 });
 
     const ws = useRef<WebSocket | null>(null);
     const panIntervalRef = useRef<number | null>(null);
 
     useEffect(() => {
+        fetch('/map.json')
+            .then(res => res.json())
+            .then(mapData => {
+                const newWidth = mapData.width * mapData.tilewidth;
+                const newHeight = mapData.height * mapData.tileheight;
+                setMapDimensions({ width: newWidth, height: newHeight });
+                setCameraPosition({ x: newWidth / 2, y: newHeight / 2 });
+            });
+
         const wsUrl = `ws://${window.location.hostname}:8080`;
         const webSocket = new WebSocket(wsUrl);
         ws.current = webSocket;
@@ -88,11 +98,11 @@ export default function GamePageContent() {
     const centerCameraOnSquad = useCallback(() => {
         const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
         if (playerUnits.length > 0) {
-            const avgX = playerUnits.reduce((sum, u) => sum + (u.position.x / 100 * MAP_DIMENSIONS.width), 0) / playerUnits.length;
-            const avgY = playerUnits.reduce((sum, u) => sum + (u.position.y / 100 * MAP_DIMENSIONS.height), 0) / playerUnits.length;
+            const avgX = playerUnits.reduce((sum, u) => sum + (u.position.x / 100 * mapDimensions.width), 0) / playerUnits.length;
+            const avgY = playerUnits.reduce((sum, u) => sum + (u.position.y / 100 * mapDimensions.height), 0) / playerUnits.length;
             setCameraPosition({ x: avgX, y: avgY });
         }
-    }, [units, pseudo]);
+    }, [units, pseudo, mapDimensions]);
     
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -129,8 +139,8 @@ export default function GamePageContent() {
                 if (!panIntervalRef.current) {
                     panIntervalRef.current = window.setInterval(() => {
                         setCameraPosition(prev => ({
-                            x: Math.max(0, Math.min(MAP_DIMENSIONS.width, prev.x + panX)),
-                            y: Math.max(0, Math.min(MAP_DIMENSIONS.height, prev.y + panY))
+                            x: Math.max(0, Math.min(mapDimensions.width, prev.x + panX)),
+                            y: Math.max(0, Math.min(mapDimensions.height, prev.y + panY))
                         }));
                     }, 16); 
                 }
@@ -159,7 +169,7 @@ export default function GamePageContent() {
                 clearInterval(panIntervalRef.current);
             }
         };
-    }, []);
+    }, [mapDimensions]);
 
     const handlePing = useCallback((coords: { x: number, y: number }) => {
         if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
@@ -315,6 +325,7 @@ export default function GamePageContent() {
                     onAttack={handleAttack}
                     onSelectUnit={handleSelectUnit}
                     onSelectUnits={handleSelectUnits}
+                    mapDimensions={mapDimensions}
                 />
             </Suspense>
             
@@ -322,7 +333,7 @@ export default function GamePageContent() {
                 <FogOfWar 
                     visionSources={visionSources} 
                     visionRadius={VISION_RADIUS}
-                    mapDimensions={MAP_DIMENSIONS}
+                    mapDimensions={mapDimensions}
                     zoom={zoom}
                     cameraPosition={cameraPosition}
                 />
