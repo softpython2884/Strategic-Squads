@@ -225,22 +225,45 @@ export const gameState = {
     return liveUnits.find(u => u.id === unitId);
   },
   
-  useSkill: (unitId: string, skillId: string, ticks: number) => {
-    const unit = liveUnits.find(u => u.id === unitId);
-    if (!unit) {
+  useSkill: (unitId: string, skillId: string) => {
+    const unitIndex = liveUnits.findIndex(u => u.id === unitId);
+    if (unitIndex === -1) {
       console.error(`useSkill: Unit with id ${unitId} not found.`);
       return false;
     }
     
+    let unit = liveUnits[unitIndex];
+
+    if (unit.combat.status !== 'alive') {
+        console.log(`Unit ${unitId} is not alive and cannot use skills.`);
+        return false;
+    }
+
     if (unit.combat.cooldowns[skillId] > 0) {
       console.log(`Skill ${skillId} is on cooldown for unit ${unitId}.`);
       return false;
     }
+
+    const hero = HEROES_DATA.find(h => h.id === unit.heroId);
+    const skill = hero?.skills.find(s => s.id.toString() === skillId);
+
+    if (!skill) {
+      console.error(`Skill ${skillId} not found for hero ${unit.heroId}.`);
+      return false;
+    }
     
-    console.log(`Unit ${unitId} used skill ${skillId}. Setting cooldown for ${ticks} ticks.`);
-    unit.combat.cooldowns[skillId] = ticks;
-    // Here you would apply the skill's effects (damage, healing, etc.)
+    if (unit.progression.level < (skill.level || 1)) {
+        console.log(`Unit ${unitId} is level ${unit.progression.level} but skill requires level ${skill.level || 1}.`);
+        return false;
+    }
+
+    // Apply skill logic here (damage, buffs, etc.)
+    // For now, just put it on cooldown.
+    console.log(`Unit ${unitId} used skill ${skill.name}. Putting on cooldown for ${skill.cooldown} seconds.`);
+    unit.combat.cooldowns[skillId] = skill.cooldown;
     
+    liveUnits[unitIndex] = unit;
+
     return true;
   },
   
@@ -254,6 +277,9 @@ export const gameState = {
         for (const skillId in newCooldowns) {
             if (newCooldowns[skillId] > 0) {
                 newCooldowns[skillId] = Math.max(0, newCooldowns[skillId] - TICK_INTERVAL_S);
+                if(newCooldowns[skillId] === 0) {
+                    delete newCooldowns[skillId];
+                }
                 hasChanged = true;
             }
         }

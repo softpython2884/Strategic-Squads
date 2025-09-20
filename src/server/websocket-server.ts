@@ -53,17 +53,13 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             // The game loop will broadcast the state changes
             break;
         case 'useSkill':
-            console.log(`[Game Server] Handling useSkill for ${action.payload.unitId}`);
-            // Note: This logic is simplified. A real implementation would have more checks.
+            console.log(`[Game Server] Handling useSkill for ${action.payload.unitId} from player ${action.payload.playerId}`);
             const skillUnit = gameState.getUnits().find(u => u.id === action.payload.unitId);
-            const hero = gameState.getUnits().find(h => h.heroId === skillUnit?.heroId);
-            // This is a placeholder, a real implementation needs to get skill data properly
-            // const skill = hero?.skills.find(s => s.id.toString() === action.payload.skillId);
-            const skill = { cooldown: 5 }; // Placeholder
-
-            if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId && skill) {
-                gameState.useSkill(action.payload.unitId, action.payload.skillId, skill.cooldown);
-                // The game loop will broadcast the state change
+            if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId) {
+                gameState.useSkill(action.payload.unitId, action.payload.skillId);
+                // No broadcast needed here, game loop handles it
+            } else {
+                console.log(`[Game Server] Invalid useSkill request for unit ${action.payload.unitId} by player ${action.payload.playerId}`);
             }
             break;
         case 'startGame':

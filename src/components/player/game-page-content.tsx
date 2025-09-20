@@ -140,6 +140,20 @@ export default function GamePageContent() {
 
     }, [pseudo]);
     
+    const handleUseSkill = useCallback((unitId: string, skillId: string) => {
+        if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
+        
+        console.log(`Client sending useSkill for unit ${unitId}, skill ${skillId}`);
+        ws.current.send(JSON.stringify({
+            type: 'useSkill',
+            payload: {
+                playerId: pseudo,
+                unitId,
+                skillId,
+            }
+        }));
+    }, [pseudo]);
+
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
     const playerTeamId = playerUnits[0]?.teamId;
@@ -174,7 +188,7 @@ export default function GamePageContent() {
                     onPing={handlePing}
                     playerTeam={currentPlayerTeam}
                 />
-                <SkillBar />
+                <SkillBar playerUnits={playerUnits} onUseSkill={handleUseSkill} />
             </div>
 
             {/* Strategic Map Overlay */}

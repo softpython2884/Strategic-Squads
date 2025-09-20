@@ -53,9 +53,11 @@ export async function runSummarizeGameEvents(input: SummarizeGameEventsInput): P
   }
 }
 
+// This is now handled by WebSocket directly from the client in skill-bar.tsx
 export async function useSkill(playerId: string, unitId: string, skillId: string): Promise<boolean> {
   try {
-     // Broadcast this action to the game server to handle
+     // This function is becoming a passthrough to the WebSocket server,
+     // but the client should ideally send the message directly.
      await broadcastActionToServer({
         type: 'useSkill',
         payload: { playerId, unitId, skillId },

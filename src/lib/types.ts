@@ -10,6 +10,7 @@ export type Skill = {
   description: string;
   damage: number;
   cooldown: number;
+  level?: number; // Level required to unlock
 };
 
 export type Hero = {
@@ -21,7 +22,7 @@ export type Hero = {
   stats: {
     hp: number;
     maxHp: number;
-    resource: number;
+    resource: number; // mana, energy, etc.
     maxResource: number;
     atk: number;
     def: number;
