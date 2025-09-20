@@ -4,7 +4,7 @@
 import React, { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import type { Unit, Team, Ping } from '@/lib/types';
+import type { Unit, Team, Ping, UnitComposition } from '@/lib/types';
 import GameMap from "@/components/player/game-map";
 import TeamPanel from './hud/team-panel';
 import SkillBar from './hud/skill-bar';
@@ -145,6 +145,7 @@ export default function GamePageContent() {
     const playerTeamId = playerUnits[0]?.teamId;
     const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
+    const squadComposition = playerUnits[0]?.composition;
 
     return (
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
@@ -164,7 +165,7 @@ export default function GamePageContent() {
             <div className="absolute inset-0 z-10 pointer-events-none">
                 <GameTimer remainingTime={gameTime} />
                 <TeamPanel teamMates={teamMates} teams={teams}/>
-                <ObjectivesPanel />
+                <ObjectivesPanel squadComposition={squadComposition} />
                 <MiniMap 
                     units={units} 
                     teams={teams} 
