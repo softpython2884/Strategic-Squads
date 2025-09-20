@@ -36,92 +36,88 @@ function initializeMapAndPathfinding() {
         grid = new Grid(mapWidth, mapHeight);
 
         // --- Find Layers ---
-        const wallLayer = mapData.layers.find((l: any) => l.name === 'admin'); // Walls
-        const objectivesLayer = mapData.layers.find((l: any) => l.name === 'dev' || l.name === 'helper'); // Towers, Idols, Spawns
+        const logicLayer = mapData.layers.find((l: any) => l.name === 'Kevel 0');
 
-        // --- Process Walls for Pathfinding ---
-        if (wallLayer && wallLayer.type === 'tilelayer') {
+        // --- Find Tilesets by name from source path ---
+        const tilesets: {[key: string]: any} = {};
+        mapData.tilesets.forEach((ts: any) => {
+            const sourceName = ts.source.split('/').pop().replace('.tsx', ''); // e.g., "admin"
+            tilesets[sourceName] = ts;
+        });
+
+        // Tileset names from user
+        const WALL_TILESET_NAME = 'admin';
+        const DEV_TILESET_NAME = 'dev'; // Towers, Idols
+        const HELPER_TILESET_NAME = 'helper'; // Spawns
+        
+        const wallTileset = tilesets[WALL_TILESET_NAME];
+        const devTileset = tilesets[DEV_TILESET_NAME];
+        const helperTileset = tilesets[HELPER_TILESET_NAME];
+        
+        // --- Process Logic Layer ---
+        if (logicLayer && logicLayer.type === 'tilelayer') {
+            const processedTowers = new Set<string>();
+
             for (let y = 0; y < mapHeight; y++) {
                 for (let x = 0; x < mapWidth; x++) {
                     const tileIndex = y * mapWidth + x;
-                    if (wallLayer.data[tileIndex] !== 0) {
-                        grid.setWalkableAt(x, y, false);
-                    }
-                }
-            }
-            console.log('Pathfinding grid initialized with walls from "admin" layer.');
-        } else {
-            console.warn("Could not find a 'admin' tile layer for walls in map.json. All tiles are walkable.");
-        }
-
-        // --- Process Objectives & Spawns from Tile Layers ---
-        const devLayer = mapData.layers.find((l: any) => l.name === 'dev'); // Towers/Idols
-        const helperLayer = mapData.layers.find((l: any) => l.name === 'helper'); // Spawns
-        
-        // Find tilesets by name
-        const tilesets: {[key: string]: any} = {};
-        mapData.tilesets.forEach((ts: any) => {
-            tilesets[ts.name] = ts;
-        });
-
-        // Parse Towers/Idols from 'dev' layer
-        if (devLayer && devLayer.type === 'tilelayer') {
-             for (let y = 0; y < mapHeight -1; y++) {
-                for (let x = 0; x < mapWidth -1; x++) {
-                    const tileIndex = y * mapWidth + x;
-                    const gid = devLayer.data[tileIndex];
+                    const gid = logicLayer.data[tileIndex];
                     if (gid === 0) continue;
 
-                    let team: 'blue' | 'red' | null = null;
-                    let type: 'tower' | 'idol' | null = null;
-                    
-                    if (tilesets.blue_tower && gid >= tilesets.blue_tower.firstgid && gid < tilesets.blue_tower.firstgid + tilesets.blue_tower.tilecount) {
-                        team = 'blue';
-                        type = 'tower';
-                    } else if (tilesets.red_tower && gid >= tilesets.red_tower.firstgid && gid < tilesets.red_tower.firstgid + tilesets.red_tower.tilecount) {
-                        team = 'red';
-                        type = 'tower';
+                    // 1. Process Walls
+                    if (wallTileset && gid >= wallTileset.firstgid && gid < wallTileset.firstgid + 10) { // Assuming 10 tiles for admin
+                        grid.setWalkableAt(x, y, false);
                     }
-                    
-                    if (team && type) {
-                         tempObjectives.push({
+
+                    // 2. Process Spawns
+                    if (helperTileset && gid >= helperTileset.firstgid && gid < helperTileset.firstgid + 10) {
+                        // Assuming the first tile in helper set is blue, second is red
+                        if (gid === helperTileset.firstgid) {
+                            spawnPoints.blue = { x: (x / mapWidth) * 100, y: (y / mapHeight) * 100 };
+                        } else if (gid === helperTileset.firstgid + 1) {
+                            spawnPoints.red = { x: (x / mapWidth) * 100, y: (y / mapHeight) * 100 };
+                        }
+                    }
+
+                    // 3. Process Towers/Idols
+                    if (devTileset && gid >= devTileset.firstgid && gid < devTileset.firstgid + 10) {
+                        const towerKey = `${x}-${y}`;
+                        if (processedTowers.has(towerKey)) continue;
+
+                        let team: 'blue' | 'red' | 'neutral' = 'neutral';
+                        let type: 'tower' | 'idol' = 'tower';
+                        
+                        // Crude check based on GID for team. This needs to be robust.
+                        // For example, GID 347,348 for blue tower, 351,352 for red tower
+                        if (gid === 347 || gid === 348) team = 'blue';
+                        if (gid === 351 || gid === 352) team = 'red';
+
+
+                        const newObjective: Objective = {
                             id: `${type}-${team}-${x}-${y}`,
                             name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${team.charAt(0).toUpperCase() + team.slice(1)}`,
-                            position: { x: ((x + 1) / mapWidth) * 100, y: ((y + 1) / mapHeight) * 100 }, // Center of the 2x2 structure
+                            position: { x: ((x + 0.5) / mapWidth) * 100, y: ((y + 0.5) / mapHeight) * 100 },
                             teamId: team,
                             type: type,
                             stats: { hp: 5000, maxHp: 5000 }
-                        });
-                        // Mark the 2x2 area as unwalkable
-                        grid.setWalkableAt(x, y, false);
-                        grid.setWalkableAt(x+1, y, false);
-                        grid.setWalkableAt(x, y+1, false);
-                        grid.setWalkableAt(x+1, y+1, false);
-                        // Skip the next tile to avoid double counting
-                        x++; 
+                        };
+                        tempObjectives.push(newObjective);
+                        
+                        // Mark 2x2 area as unwalkable and processed
+                        for (let dy = 0; dy < 2; dy++) {
+                            for (let dx = 0; dx < 2; dx++) {
+                                grid.setWalkableAt(x + dx, y + dy, false);
+                                processedTowers.add(`${x + dx}-${y + dy}`);
+                            }
+                        }
                     }
                 }
             }
+            console.log('Pathfinding grid, spawns, and objectives initialized from "Kevel 0" layer.');
+        } else {
+             console.warn("Could not find a 'Kevel 0' tile layer in map.json. Map logic will not be loaded.");
+             grid = new Grid(mapWidth, mapHeight); // Ensure grid is always initialized
         }
-        
-        // Parse Spawns from 'helper' layer
-         if (helperLayer && helperLayer.type === 'tilelayer') {
-            for (let y = 0; y < mapHeight; y++) {
-                for (let x = 0; x < mapWidth; x++) {
-                     const tileIndex = y * mapWidth + x;
-                     const gid = helperLayer.data[tileIndex];
-                     if (gid === 0) continue;
-                     
-                      if (tilesets.blue_spawn && gid >= tilesets.blue_spawn.firstgid) {
-                         spawnPoints.blue = { x: (x / mapWidth) * 100, y: (y / mapHeight) * 100 };
-                      } else if (tilesets.red_spawn && gid >= tilesets.red_spawn.firstgid) {
-                         spawnPoints.red = { x: (x / mapWidth) * 100, y: (y / mapHeight) * 100 };
-                      }
-                }
-            }
-            console.log("Updated spawn points from 'helper' layer:", spawnPoints);
-         }
-
 
     } catch (error) {
         console.error('Failed to initialize map data:', error);
@@ -131,6 +127,7 @@ function initializeMapAndPathfinding() {
     }
     mapObjectives = tempObjectives;
     console.log(`Loaded ${mapObjectives.length} objectives from map file.`);
+    console.log("Updated spawn points:", spawnPoints);
 }
 
 // Call this once on server startup
@@ -643,3 +640,5 @@ export const gameState = {
     console.log('Game state has been reset.');
   }
 };
+
+    
