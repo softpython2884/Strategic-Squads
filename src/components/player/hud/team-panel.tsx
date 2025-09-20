@@ -102,9 +102,9 @@ const PlayerPortrait = ({ player, team, isCurrentUser }: { player: PlayerGroup, 
     );
 };
 
-const TeamPanel = ({ teamMates, teams, currentPlayerId }: { teamMates: Unit[], teams: {[key: string]: Team}, currentPlayerId: string | null }) => {
+const TeamPanel = ({ teamUnits, teams, currentPlayerId }: { teamUnits: Unit[], teams: {[key: string]: Team}, currentPlayerId: string | null }) => {
     // Group units by player
-    const playerGroups = teamMates.reduce((acc, unit) => {
+    const playerGroups = teamUnits.reduce((acc, unit) => {
         const playerId = unit.control.controllerPlayerId;
         if (playerId) {
             if (!acc[playerId]) {
@@ -115,23 +115,19 @@ const TeamPanel = ({ teamMates, teams, currentPlayerId }: { teamMates: Unit[], t
         return acc;
     }, {} as { [key: string]: PlayerGroup });
     
-    const players = Object.values(playerGroups);
-    const teamId = players[0]?.units[0]?.teamId;
+    const teamId = teamUnits[0]?.teamId;
     const team = teamId ? teams[teamId] : null;
 
-    // Add current player to the top of the list
-    const currentPlayerUnits = teamMates.filter(u => u.control.controllerPlayerId === currentPlayerId);
-    const allPlayersInPanel = [];
+    // Separate current player and teammates
+    const currentPlayerGroup = currentPlayerId ? playerGroups[currentPlayerId] : undefined;
+    const otherPlayerGroups = Object.values(playerGroups).filter(p => p.playerId !== currentPlayerId);
 
-    if (currentPlayerId && currentPlayerUnits.length > 0) {
-        allPlayersInPanel.push({
-            playerId: currentPlayerId,
-            units: currentPlayerUnits,
-        });
+    const allPlayersInPanel: (PlayerGroup | { playerId: string; units: [] })[] = [];
+
+    if (currentPlayerGroup) {
+        allPlayersInPanel.push(currentPlayerGroup);
     }
-
-    const otherPlayers = players.filter(p => p.playerId !== currentPlayerId);
-    allPlayersInPanel.push(...otherPlayers);
+    allPlayersInPanel.push(...otherPlayerGroups);
 
 
     // Fill with empty slots to always show 4
@@ -145,7 +141,7 @@ const TeamPanel = ({ teamMates, teams, currentPlayerId }: { teamMates: Unit[], t
         <div className="absolute top-4 right-4 flex flex-col gap-2 w-52">
             {allPlayersInPanel.slice(0,4).map((player, index) => (
                player.units.length > 0 
-                ? <PlayerPortrait key={player.playerId || index} player={player} team={team} isCurrentUser={player.playerId === currentPlayerId} />
+                ? <PlayerPortrait key={player.playerId || index} player={player as PlayerGroup} team={team} isCurrentUser={player.playerId === currentPlayerId} />
                 : <div key={index} className="h-[76px] w-full bg-black/50 rounded-lg border border-white/10"></div>
             ))}
         </div>

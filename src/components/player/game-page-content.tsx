@@ -14,7 +14,7 @@ import ObjectivesPanel from './hud/objectives-panel';
 import GameTimer from './hud/game-timer';
 import StrategicMapOverlay from './hud/strategic-map-overlay';
 import FogOfWar from './hud/fog-of-war';
-import { objectives } from '@/lib/objectives';
+import { objectives as staticObjectives } from '@/lib/objectives';
 
 
 function GameMapLoading() {
@@ -63,37 +63,40 @@ export default function GamePageContent() {
                 setCameraPosition({ x: newWidth / 2, y: newHeight / 2 });
             });
 
-        const wsUrl = `ws://${window.location.hostname}:8080`;
-        const webSocket = new WebSocket(wsUrl);
-        ws.current = webSocket;
+        if (!ws.current) {
+            const wsUrl = `ws://${window.location.hostname}:8080`;
+            const webSocket = new WebSocket(wsUrl);
+            ws.current = webSocket;
 
-        ws.current.onopen = () => console.log('GamePage WebSocket connected');
+            ws.current.onopen = () => console.log('GamePage WebSocket connected');
 
-        ws.current.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                if (message.type === 'full-state' || message.type === 'update-state') {
-                    setUnits(message.payload.units);
-                    setTeams(message.payload.teams);
-                    setGameTime(message.payload.gameTime);
-                } else if (message.type === 'ping-broadcast') {
-                    const newPing = message.payload as Ping;
-                    setPings(prevPings => [...prevPings, newPing]);
-                    setTimeout(() => {
-                        setPings(prev => prev.filter(p => p.id !== newPing.id));
-                    }, PING_DURATION_MS);
+            ws.current.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'full-state' || message.type === 'update-state') {
+                        setUnits(message.payload.units);
+                        setTeams(message.payload.teams);
+                        setGameTime(message.payload.gameTime);
+                    } else if (message.type === 'ping-broadcast') {
+                        const newPing = message.payload as Ping;
+                        setPings(prevPings => [...prevPings, newPing]);
+                        setTimeout(() => {
+                            setPings(prev => prev.filter(p => p.id !== newPing.id));
+                        }, PING_DURATION_MS);
+                    }
+                } catch (error) {
+                    console.error("Error parsing WebSocket message:", error);
                 }
-            } catch (error) {
-                console.error("Error parsing WebSocket message:", error);
-            }
-        };
+            };
 
-        ws.current.onclose = () => console.log('GamePage WebSocket disconnected');
-        ws.current.onerror = (error) => console.error('GamePage WebSocket error:', error);
+            ws.current.onclose = () => console.log('GamePage WebSocket disconnected');
+            ws.current.onerror = (error) => console.error('GamePage WebSocket error:', error);
+        }
 
         return () => {
             if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
               ws.current.close();
+              ws.current = null;
             }
         };
     }, []);
@@ -192,9 +195,9 @@ export default function GamePageContent() {
     }, [pseudo]);
 
     const handleMove = useCallback((coords: { x: number, y: number }) => {
-        if (!pseudo || selectedUnitIds.size === 0) return;
+        if (!pseudo || selectedUnitIds.size === 0 || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
         
-        ws.current?.send(JSON.stringify({
+        ws.current.send(JSON.stringify({
             type: 'move',
             payload: {
                 playerId: pseudo,
@@ -278,7 +281,7 @@ export default function GamePageContent() {
     
     const visionSources = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.combat.status === 'alive').map(u => u.position) : [];
     
-    const alliedObjectives = objectives.filter(obj => obj.teamId === playerTeamId);
+    const alliedObjectives = staticObjectives.filter(obj => obj.teamId === playerTeamId);
     visionSources.push(...alliedObjectives.map(o => o.position));
 
     const isVisible = useCallback((unitPos: {x: number, y: number}) => {
@@ -303,8 +306,10 @@ export default function GamePageContent() {
         return isVisible(unit.position);
     });
 
-    const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId && u.control.controllerPlayerId !== pseudo) : [];
+    const allPlayerTeamUnits = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
+    const visibleUnits = [...playerUnits, ...otherUnits];
+
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
     const unitsForSkillBar = selectedUnitIds.size > 0 ? selectedPlayerUnits : playerUnits;
@@ -341,10 +346,10 @@ export default function GamePageContent() {
                     cameraPosition={cameraPosition}
                 />
                 <GameTimer remainingTime={gameTime} />
-                <TeamPanel teamMates={teamMates} teams={teams} currentPlayerId={pseudo} />
+                <TeamPanel teamUnits={allPlayerTeamUnits} teams={teams} currentPlayerId={pseudo} />
                 <ObjectivesPanel squadComposition={playerUnits[0]?.composition} />
                 <MiniMap 
-                    units={units} 
+                    units={visibleUnits}
                     teams={teams} 
                     currentPlayerId={pseudo} 
                     pings={pings}

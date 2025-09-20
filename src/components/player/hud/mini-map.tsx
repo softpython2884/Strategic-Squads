@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -76,14 +77,25 @@ const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: M
                 {/* Display units */}
                 {units.map(unit => {
                     const isPlayerUnit = unit.control.controllerPlayerId === currentPlayerId;
-                    const isAlly = !isPlayerUnit && playerTeam && unit.teamId === (playerTeam.name === "Équipe Bleue" ? 'blue' : 'red');
+                    
+                    if (unit.type === 'tower' || unit.type === 'idol') {
+                        return (
+                             <div
+                                key={unit.id}
+                                className="absolute w-3 h-3 transform -translate-x-1/2 -translate-y-1/2"
+                                style={{
+                                    left: `${unit.position.x}%`,
+                                    top: `${unit.position.y}%`,
+                                    backgroundColor: teams[unit.teamId]?.color || '#ffffff',
+                                    clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)', // Triangle for objectives
+                                }}
+                            />
+                        )
+                    }
 
                     let dotColor = teams[unit.teamId]?.color || '#ffffff';
                     if (isPlayerUnit) dotColor = '#00ffff'; // Cyan for player's own units
-                    else if (isAlly) dotColor = teams[unit.teamId]?.color;
-                    else dotColor = teams[unit.teamId]?.color; // Could be different for enemies if needed
                     
-
                     return (
                         <div
                             key={unit.id}
