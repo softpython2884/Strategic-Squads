@@ -257,11 +257,11 @@ const calculateDistance = (posA: {x: number, y: number}, posB: {x: number, y: nu
 
 // Function to apply damage from an attacker to a defender
 const applyDamage = (attacker: Unit | null, defender: Unit, baseDamage: number) => {
-    // If there's an attacker, factor in their stats. Otherwise, just use base damage.
-    const attackerAtk = attacker ? attacker.stats.atk * damageMultiplier : 0;
-    const totalDamage = Math.max(0, baseDamage + attackerAtk - defender.stats.def);
+    // If there's no attacker, just use base damage.
+    const totalDamage = baseDamage * (attacker ? damageMultiplier : 1);
+    const finalDamage = Math.max(0, totalDamage - defender.stats.def);
     
-    defender.stats.hp = Math.max(0, defender.stats.hp - totalDamage);
+    defender.stats.hp = Math.max(0, defender.stats.hp - finalDamage);
     
     // console.log(`${attacker?.name || 'Skill'} damaged ${defender.name} for ${totalDamage}. HP: ${defender.stats.hp}`);
 
@@ -557,7 +557,7 @@ export const gameState = {
             } else {
                 // In range, attack
                 if (unit.combat.attackCooldown <= 0) {
-                    applyDamage(unit, target, 0);
+                    applyDamage(unit, target, unit.stats.atk);
                     unit.combat.attackCooldown = 1 / unit.stats.spd;
                 }
                 unit.control.moveTarget = undefined;
