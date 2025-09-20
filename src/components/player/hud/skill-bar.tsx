@@ -67,28 +67,45 @@ const SkillIcon = ({ unit, skill, shortcut, onUse, cooldown }: { unit: Unit, ski
 };
 
 const SkillBar = ({ playerUnits, onUseSkill }: SkillBarProps) => {
+    // This logic dynamically builds the skill bar based on the player's current units.
+    // It paves the way for a future selection system.
     const skillsToDisplay: { unit: Unit, skill: SkillData }[] = [];
     
-    // Get the first 2 skills for each of the 4 units
-    playerUnits.slice(0, 4).forEach(unit => {
-        const heroData = HEROES_DATA.find(h => h.id === unit.heroId);
-        if (heroData) {
-            heroData.skills.slice(0, 2).forEach(skill => {
-                skillsToDisplay.push({ unit, skill });
-            });
-        }
-    });
+    // For now, "selected units" are all the player's units.
+    const selectedUnits = playerUnits;
+    const totalSlots = 8;
+    
+    if (selectedUnits.length > 0) {
+        const skillsPerUnit = Math.floor(totalSlots / selectedUnits.length);
+        let remainder = totalSlots % selectedUnits.length;
 
-    const ultimate = skillsToDisplay[0] ? {
-        ...skillsToDisplay[0].unit,
-        skill: HEROES_DATA.find(h => h.id === skillsToDisplay[0].unit.heroId)?.skills[3]
-    } : null;
+        for (const unit of selectedUnits) {
+            const heroData = HEROES_DATA.find(h => h.id === unit.heroId);
+            if (heroData) {
+                const skillsToAddCount = skillsPerUnit + (remainder > 0 ? 1 : 0);
+                // We take the first skills, excluding the ultimate (which is usually the 4th one)
+                const unitSkills = heroData.skills.filter(s => s.id !== 4).slice(0, skillsToAddCount);
+                
+                unitSkills.forEach(skill => {
+                    skillsToDisplay.push({ unit, skill });
+                });
+
+                if (remainder > 0) {
+                    remainder--;
+                }
+            }
+        }
+    }
+    
+    // The ultimate is usually the one of the "main" hero (the first in the squad)
+    const mainHeroUnit = playerUnits[0];
+    const ultimate = mainHeroUnit ? HEROES_DATA.find(h => h.id === mainHeroUnit.heroId)?.skills.find(s => s.id === 4) : null;
 
 
     return (
         <TooltipProvider>
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-end gap-3 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 rounded-t-lg">
-                {skillsToDisplay.map(({ unit, skill }, index) => (
+                {skillsToDisplay.slice(0, 8).map(({ unit, skill }, index) => (
                     <SkillIcon 
                         key={`${unit.id}-${skill.id}`} 
                         unit={unit}
@@ -99,17 +116,17 @@ const SkillBar = ({ playerUnits, onUseSkill }: SkillBarProps) => {
                     />
                 ))}
                 
-                {ultimate?.skill && (
+                {mainHeroUnit && ultimate && (
                     <>
                         <div className="w-px h-16 bg-white/20 mx-2"></div>
                         <div className="relative">
                             <div className="w-16 h-16">
                                 <SkillIcon
-                                    unit={ultimate}
-                                    skill={ultimate.skill}
+                                    unit={mainHeroUnit}
+                                    skill={ultimate}
                                     shortcut="F"
-                                    onUse={() => onUseSkill(ultimate.id, ultimate.skill!.id.toString())}
-                                    cooldown={ultimate.combat.cooldowns[ultimate.skill.id] || 0}
+                                    onUse={() => onUseSkill(mainHeroUnit.id, ultimate.id.toString())}
+                                    cooldown={mainHeroUnit.combat.cooldowns[ultimate.id] || 0}
                                 />
                             </div>
                         </div>
