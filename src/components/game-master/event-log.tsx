@@ -25,7 +25,8 @@ export default function EventLog() {
     try {
       const response = await runSummarizeGameEvents({ gameEventsLog: log });
       setSummary(response.summary);
-    } catch (e: any)      setError(e.message || "Une erreur inconnue est survenue.");
+    } catch (e: any) {
+      setError(e.message || "Une erreur inconnue est survenue.");
     } finally {
       setIsLoading(false);
     }
