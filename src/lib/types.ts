@@ -82,6 +82,7 @@ export type Unit = {
     controllerPlayerId?: string;
     focus?: string; // target entity id
     moveTarget?: { x: number; y: number }; // target position for movement
+    path?: number[][]; // Path for movement, array of [x, y]
   };
   
 };

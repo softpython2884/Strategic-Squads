@@ -2,6 +2,59 @@
 import type { Unit, Team, UnitComposition } from '@/lib/types';
 import type { JoinGameInput, SquadUnit } from '@/app/actions';
 import { HEROES_DATA } from '@/lib/heroes';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Grid, AStarFinder } from 'pathfinding';
+
+
+// =================================================================
+// Pathfinding Setup
+// =================================================================
+let grid: Grid;
+let mapWidth: number;
+let mapHeight: number;
+
+function initializePathfindingGrid() {
+    try {
+        const mapPath = path.join(process.cwd(), 'public', 'map.json');
+        const mapData = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
+
+        mapWidth = mapData.width;
+        mapHeight = mapData.height;
+        grid = new Grid(mapWidth, mapHeight);
+
+        // Assuming a wall layer named 'admin' (based on user note)
+        const wallLayer = mapData.layers.find((l: any) => l.name === 'admin');
+        if (wallLayer) {
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    const tileIndex = y * mapWidth + x;
+                    const tileGid = wallLayer.data[tileIndex];
+                    if (tileGid !== 0) {
+                        grid.setWalkableAt(x, y, false);
+                    }
+                }
+            }
+            console.log('Pathfinding grid initialized with walls.');
+        } else {
+            console.warn("Could not find a 'admin' layer for walls in map.json. All tiles are walkable.");
+        }
+    } catch (error) {
+        console.error('Failed to initialize pathfinding grid:', error);
+        // Create a walkable grid if map loading fails
+        mapWidth = 64;
+        mapHeight = 64;
+        grid = new Grid(mapWidth, mapHeight);
+    }
+}
+
+// Call this once on server startup
+initializePathfindingGrid();
+
+
+// =================================================================
+// Game State
+// =================================================================
 
 const teams: { [key: string]: Team } = {
   blue: {
@@ -181,13 +234,37 @@ export const gameState = {
      liveUnits = liveUnits.map(unit => {
       if (unitIds.includes(unit.id)) {
         if (unit.combat.status !== 'alive') return unit;
-        return {
-            ...unit,
-            control: {
-                ...unit.control,
-                moveTarget: position,
-                focus: undefined,
+
+        const TILE_WIDTH = 32;
+        const TILE_HEIGHT = 32;
+        
+        // Convert world % to grid coordinates
+        const startX = Math.floor(unit.position.x / 100 * mapWidth * TILE_WIDTH / TILE_WIDTH);
+        const startY = Math.floor(unit.position.y / 100 * mapHeight * TILE_HEIGHT / TILE_HEIGHT);
+        const endX = Math.floor(position.x / 100 * mapWidth * TILE_WIDTH / TILE_WIDTH);
+        const endY = Math.floor(position.y / 100 * mapHeight * TILE_HEIGHT / TILE_HEIGHT);
+
+        const gridClone = grid.clone();
+        const finder = new AStarFinder();
+        
+        // Ensure start and end nodes are walkable for the finder
+        gridClone.setWalkableAt(startX, startY, true);
+        gridClone.setWalkableAt(endX, endY, true);
+
+        const path = finder.findPath(startX, startY, endX, endY, gridClone);
+
+        if (path && path.length > 0) {
+            return {
+                ...unit,
+                control: {
+                    ...unit.control,
+                    moveTarget: position, // Keep final destination
+                    focus: undefined,
+                    path: path,
+                }
             }
+        } else {
+            console.log(`No path found for unit ${unit.id} from (${startX},${startY}) to (${endX},${endY})`);
         }
       }
       return unit;
@@ -204,6 +281,7 @@ export const gameState = {
                     ...unit.control,
                     focus: targetId || undefined,
                     moveTarget: targetId ? undefined : position,
+                    path: undefined, // Clear path when attacking
                 }
             }
         }
@@ -335,21 +413,47 @@ export const gameState = {
 
   processUnitActions: () => {
     if (!isGameStarted) return;
-    
+    const TILE_WIDTH = 32;
+    const TILE_HEIGHT = 32;
+
     liveUnits = liveUnits.map(unit => {
-      if (unit.combat.status !== 'alive') return unit; // Skip dead/down units
+      if (unit.combat.status !== 'alive') return unit;
       
       const speed = 1; // Simplified speed (units per tick)
-      const attackRange = 10; // Simplified attack range for all units
+      const attackRange = 10;
 
-      // 1. Handle explicit attack orders
-      if (unit.control.focus) {
+      // 1. Pathfinding Movement
+      if (unit.control.path && unit.control.path.length > 0) {
+        const nextNode = unit.control.path[0];
+        const targetPos = {
+            x: (nextNode[0] / mapWidth) * 100,
+            y: (nextNode[1] / mapHeight) * 100,
+        };
+
+        const dist = calculateDistance(unit.position, targetPos);
+
+        if (dist > speed) {
+            const dx = targetPos.x - unit.position.x;
+            const dy = targetPos.y - unit.position.y;
+            unit.position.x += (dx / dist) * speed;
+            unit.position.y += (dy / dist) * speed;
+        } else {
+            // Reached the node, remove it from path
+            unit.control.path.shift();
+            if (unit.control.path.length === 0) {
+                unit.control.path = undefined; // Path completed
+                unit.control.moveTarget = undefined;
+            }
+        }
+      }
+      // 2. Handle explicit attack orders
+      else if (unit.control.focus) {
         const target = liveUnits.find(u => u.id === unit.control.focus);
         if (target && target.combat.status === 'alive') {
             const dist = calculateDistance(unit.position, target.position);
             
             if (dist > attackRange) {
-                // Move towards target
+                // Move towards target (no pathfinding for attacks yet)
                 const dx = target.position.x - unit.position.x;
                 const dy = target.position.y - unit.position.y;
                 unit.position.x += (dx / dist) * speed;
@@ -357,27 +461,24 @@ export const gameState = {
             } else {
                 // In range, attack
                 if (unit.combat.attackCooldown <= 0) {
-                    applyDamage(unit, target, 0); // Base damage is 0, real damage comes from unit stats
-                    unit.combat.attackCooldown = 1 / unit.stats.spd; // Reset cooldown
+                    applyDamage(unit, target, 0);
+                    unit.combat.attackCooldown = 1 / unit.stats.spd;
                 }
-                unit.control.moveTarget = undefined; // Stop moving if in attack range
+                unit.control.moveTarget = undefined;
             }
         } else {
-            // Target is gone or dead, clear focus
             unit.control.focus = undefined;
         }
       } 
-      // 2. Handle move orders (if no attack order)
+      // 3. Handle old move orders (if path failed or not used)
       else if (unit.control.moveTarget) {
           const dist = calculateDistance(unit.position, unit.control.moveTarget);
-
           if (dist > speed) {
             const dx = unit.control.moveTarget.x - unit.position.x;
             const dy = unit.control.moveTarget.y - unit.position.y;
             unit.position.x += (dx / dist) * speed;
             unit.position.y += (dy / dist) * speed;
           } else {
-            // Arrived at destination
             unit.position.x = unit.control.moveTarget.x;
             unit.position.y = unit.control.moveTarget.y;
             unit.control.moveTarget = undefined;
@@ -390,7 +491,6 @@ export const gameState = {
       
       return unit;
     })
-
   },
 
   processGameTick: () => {
@@ -400,14 +500,12 @@ export const gameState = {
     
     const elapsedTime = GAME_DURATION_SECONDS - gameTime;
     
-    // After 25 mins
     if (elapsedTime >= (25 * 60) && elapsedTime < (30 * 60)) {
         if (damageMultiplier !== 2) {
             console.log("Game time > 25 mins. Damage multiplier is now x2.");
             damageMultiplier = 2;
         }
     } 
-    // After 30 mins
     else if (elapsedTime >= (30 * 60)) {
         if (damageMultiplier !== 5) {
             console.log("Game time > 30 mins. Damage multiplier is now x5.");
@@ -417,12 +515,12 @@ export const gameState = {
   },
 
   reset: () => {
-    // Deep copy to avoid mutation issues on subsequent resets
     liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {}, attackCooldown: 0 }, progression: {...u.progression}}))];
     liveTeams = {...teams};
     isGameStarted = false;
     gameTime = GAME_DURATION_SECONDS;
     damageMultiplier = 1;
     console.log('Game state has been reset.');
+    initializePathfindingGrid();
   }
 };
