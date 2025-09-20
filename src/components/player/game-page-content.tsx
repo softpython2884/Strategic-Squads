@@ -12,6 +12,7 @@ import MiniMap from './hud/mini-map';
 import ObjectivesPanel from './hud/objectives-panel';
 import GameTimer from './hud/game-timer';
 import { moveUnit } from '@/app/actions';
+import StrategicMapOverlay from './hud/strategic-map-overlay';
 
 function GameMapLoading() {
     return (
@@ -34,6 +35,7 @@ export default function GamePageContent() {
     const [teams, setTeams] = useState<{ [key: string]: Team }>({});
     const [gameTime, setGameTime] = useState(0);
     const [pings, setPings] = useState<Ping[]>([]);
+    const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     
     const ws = useRef<WebSocket | null>(null);
 
@@ -73,6 +75,21 @@ export default function GamePageContent() {
             }
         };
     }, []);
+
+    // Handle strategic map toggle
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === ',') {
+                e.preventDefault();
+                setIsStrategicMapOpen(prev => !prev);
+            }
+             if (e.key === 'Escape' && isStrategicMapOpen) {
+                setIsStrategicMapOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isStrategicMapOpen]);
 
     const handlePing = useCallback((coords: { x: number, y: number }) => {
         if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
@@ -158,6 +175,16 @@ export default function GamePageContent() {
                 />
                 <SkillBar />
             </div>
+
+            {/* Strategic Map Overlay */}
+            <StrategicMapOverlay
+                isOpen={isStrategicMapOpen}
+                onClose={() => setIsStrategicMapOpen(false)}
+                units={units}
+                teams={teams}
+                pings={pings}
+                onPing={handlePing}
+            />
         </main>
     );
 }
