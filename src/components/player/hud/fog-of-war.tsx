@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useRef, useEffect } from 'react';
@@ -70,3 +69,8 @@ const FogOfWar = ({ visionSources, visionRadius, mapDimensions, zoom, cameraPosi
       className="absolute inset-0 w-screen h-screen pointer-events-none"
     >
       <canvas ref={canvasRef} className="w-full h-full" />
+    </div>
+  );
+};
+
+export default FogOfWar;
