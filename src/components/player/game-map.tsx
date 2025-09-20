@@ -316,4 +316,11 @@ export default function GameMap({
                                 <PingDisplay />
                             </div>
                         ))}
-                    </An
+                    </AnimatePresence>
+                </motion.div>
+
+                {SelectionBox()}
+            </div>
+        </TooltipProvider>
+    );
+}
