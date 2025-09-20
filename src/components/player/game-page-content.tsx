@@ -63,7 +63,7 @@ export default function GamePageContent() {
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
     const playerTeamId = playerUnits[0]?.teamId;
-    const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
+    const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
 
     return (
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
@@ -80,7 +80,11 @@ export default function GamePageContent() {
                 <GameTimer remainingTime={gameTime} />
                 <TeamPanel teamMates={teamMates} teams={teams}/>
                 <ObjectivesPanel />
-                <MiniMap />
+                <MiniMap 
+                    units={units} 
+                    teams={teams} 
+                    currentPlayerId={pseudo} 
+                />
                 <SkillBar />
             </div>
         </main>
