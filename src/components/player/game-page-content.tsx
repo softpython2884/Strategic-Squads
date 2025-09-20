@@ -4,8 +4,13 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import type { Unit } from '@/lib/types';
+import type { Unit, Team } from '@/lib/types';
 import GameMap from "@/components/player/game-map";
+import TeamPanel from './hud/team-panel';
+import SkillBar from './hud/skill-bar';
+import MiniMap from './hud/mini-map';
+import ObjectivesPanel from './hud/objectives-panel';
+import GameTimer from './hud/game-timer';
 
 function GameMapLoading() {
     return (
@@ -23,7 +28,7 @@ export default function GamePageContent() {
     const pseudo = searchParams.get('pseudo');
 
     const [units, setUnits] = useState<Unit[]>([]);
-    const [teams, setTeams] = useState<{[key: string]: any}>({});
+    const [teams, setTeams] = useState<{ [key: string]: Team }>({});
 
     useEffect(() => {
         const wsUrl = `ws://${window.location.hostname}:8080`;
@@ -55,9 +60,11 @@ export default function GamePageContent() {
     
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
+    const playerTeamId = playerUnits[0]?.teamId;
+    const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
 
     return (
-        <main className="relative flex-1 w-full h-full overflow-hidden">
+        <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
                     playerUnits={playerUnits}
@@ -65,7 +72,15 @@ export default function GamePageContent() {
                     teams={teams}
                 />
             </Suspense>
-            {/* HUD elements will go here, overlaid on top of the map */}
+            
+            {/* HUD Elements */}
+            <div className="absolute inset-0 z-10 pointer-events-none">
+                <GameTimer />
+                <TeamPanel teamMates={teamMates} teams={teams}/>
+                <ObjectivesPanel />
+                <MiniMap />
+                <SkillBar />
+            </div>
         </main>
     );
 }
