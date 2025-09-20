@@ -99,7 +99,7 @@ export default function GamePageContent() {
               ws.current = null;
             }
         };
-    }, []);
+    }, []); // Empty dependency array ensures this effect runs only once on mount
 
     const centerCameraOnSquad = useCallback(() => {
         if (!mapDimensions) return;
@@ -314,7 +314,7 @@ export default function GamePageContent() {
 
     const allPlayerTeamUnits = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
-    const visibleUnits = [...playerUnits, ...otherUnits];
+    const visibleUnits = [...allPlayerTeamUnits, ...otherUnits.filter(u => u.teamId !== playerTeamId)];
 
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));

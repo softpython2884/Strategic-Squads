@@ -52,6 +52,8 @@ const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: M
         // Could also handle direct movement clicks on minimap here in the future
     };
 
+    const mapObjectives = units.filter(u => u.type === 'tower' || u.type === 'idol');
+
     return (
         <div 
             className="absolute bottom-4 right-4 w-64 h-64 bg-black/70 border-2 border-white/20 rounded-md pointer-events-auto overflow-hidden"
@@ -60,7 +62,7 @@ const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: M
             {/* Placeholder for map generated from Tiled data */}
             <div className="relative w-full h-full bg-gray-800/50">
                 {/* Display objectives */}
-                {objectives.map(obj => (
+                {mapObjectives.map(obj => (
                     <div
                         key={obj.id}
                         className="absolute transform -translate-x-1/2 -translate-y-1/2"
@@ -79,18 +81,8 @@ const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: M
                     const isPlayerUnit = unit.control.controllerPlayerId === currentPlayerId;
                     
                     if (unit.type === 'tower' || unit.type === 'idol') {
-                        return (
-                             <div
-                                key={unit.id}
-                                className="absolute w-3 h-3 transform -translate-x-1/2 -translate-y-1/2"
-                                style={{
-                                    left: `${unit.position.x}%`,
-                                    top: `${unit.position.y}%`,
-                                    backgroundColor: teams[unit.teamId]?.color || '#ffffff',
-                                    clipPath: 'polygon(50% 0%, 100% 100%, 0% 100%)', // Triangle for objectives
-                                }}
-                            />
-                        )
+                        // Already rendered above
+                        return null;
                     }
 
                     let dotColor = teams[unit.teamId]?.color || '#ffffff';
