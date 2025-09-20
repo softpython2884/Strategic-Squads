@@ -96,14 +96,22 @@ export const gameState = {
             return null;
         }
 
+        // Define spawn areas (percentages)
+        const spawnX = input.teamId === 'blue' ? 10 : 90;
+        const spawnY = input.teamId === 'blue' ? 90 : 10;
+
         const newUnit: Unit = {
-            id: `${input.pseudo}-${heroData.id}-${index}`, // More unique ID
-            name: heroData.name, // The name is now the hero's name
-            type: heroData.class, // The "type" is the hero's class
+            id: `${input.pseudo}-${heroData.id}-${index}`,
+            name: heroData.name,
+            type: heroData.class,
             heroId: heroData.id,
             teamId: input.teamId,
             composition: input.squadType,
-            position: { x: Math.floor(Math.random() * 10) + 1, y: Math.floor(Math.random() * 10) + 1 }, // Random position for now
+            position: { 
+                // Randomize spawn position slightly around the base
+                x: spawnX + (Math.random() - 0.5) * 8, 
+                y: spawnY + (Math.random() - 0.5) * 8
+            },
             stats: {
                 ...heroData.stats,
                 hp: heroData.stats.maxHp,
@@ -135,7 +143,10 @@ export const gameState = {
     let updatedUnit: Unit | undefined;
     liveUnits = liveUnits.map(unit => {
       if (unit.id === unitId) {
-        updatedUnit = { ...unit, position: { x, y } };
+        // Clamp position between 0 and 100
+        const clampedX = Math.max(0, Math.min(100, x));
+        const clampedY = Math.max(0, Math.min(100, y));
+        updatedUnit = { ...unit, position: { x: clampedX, y: clampedY } };
         return updatedUnit;
       }
       return unit;

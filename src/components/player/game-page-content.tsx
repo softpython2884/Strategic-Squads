@@ -9,7 +9,7 @@ import GameMap from "@/components/player/game-map";
 
 function GameMapLoading() {
     return (
-        <div className="w-full max-w-5xl border-2 rounded-lg border-primary overflow-hidden flex items-center justify-center aspect-square">
+        <div className="w-full max-w-5xl border-2 rounded-lg border-primary overflow-hidden flex items-center justify-center aspect-square bg-muted">
             <div className="flex flex-col items-center gap-4 text-muted-foreground">
                 <Loader2 className="w-12 h-12 animate-spin text-primary" />
                 <p>Chargement de la carte de jeu...</p>
@@ -57,8 +57,8 @@ export default function GamePageContent() {
     const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
 
     return (
-        <main className="flex flex-col items-center justify-center flex-1 p-4">
-            <h1 className="mb-4 text-2xl font-bold">Partie en cours</h1>
+        <main className="flex flex-col items-center justify-center flex-1 w-full p-4 overflow-auto">
+            {/* The GameMap itself will be large, so we allow the main container to scroll */}
             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
                     playerUnits={playerUnits}
