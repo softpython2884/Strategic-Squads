@@ -39,7 +39,7 @@ type GameMapProps = {
     onPing: (coords: { x: number, y: number }) => void;
     onMove: (coords: { x: number, y: number }) => void;
     onAttack: (target: Unit | null, coords: { x: number, y: number }) => void;
-    onSelectUnit: (unitId: string | null) => void;
+    onSelectUnit: (unitId: string | null, isShiftHeld: boolean) => void;
 };
 
 const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean }) => {
@@ -155,13 +155,13 @@ export default function GameMap({
             }
         } else {
             const clickedPlayerUnit = playerUnits.find(u => u.id === clickedUnit?.id);
-            if (clickedPlayerUnit) {
-                onSelectUnit(clickedPlayerUnit.id);
-            } else if (!clickedUnit) {
-                onMove({ x: targetX, y: targetY });
-                onSelectUnit(null); // Deselect when clicking ground to move
-            } else {
-                 onSelectUnit(null); // Deselect when clicking on other things
+            // Pass the unit ID and whether shift was held
+            onSelectUnit(clickedPlayerUnit?.id || null, event.shiftKey);
+            if (!clickedPlayerUnit) {
+                // If not clicking one of our own units, check if we're clicking nothing
+                if(!clickedUnit) {
+                    onMove({ x: targetX, y: targetY });
+                }
             }
         }
     };

@@ -220,11 +220,26 @@ export default function GamePageContent() {
         }));
     }, [pseudo]);
 
-    const handleSelectUnit = useCallback((unitId: string | null) => {
+    const handleSelectUnit = useCallback((unitId: string | null, isShiftHeld: boolean) => {
         setSelectedUnitIds(prev => {
-            const newSelection = new Set<string>();
-            if (unitId) {
-                newSelection.add(unitId);
+            const newSelection = new Set(prev);
+            
+            if (isShiftHeld) {
+                if (unitId) {
+                    // Shift-clicking a unit: toggle its selection
+                    if (newSelection.has(unitId)) {
+                        newSelection.delete(unitId);
+                    } else {
+                        newSelection.add(unitId);
+                    }
+                }
+                // If shift-clicking on ground, do nothing to the selection
+            } else {
+                // Not holding shift: standard selection
+                newSelection.clear();
+                if (unitId) {
+                    newSelection.add(unitId);
+                }
             }
             return newSelection;
         });
@@ -264,6 +279,7 @@ export default function GamePageContent() {
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
+    // If units are selected, show their skills. Otherwise, show all player's units' skills.
     const unitsForSkillBar = selectedUnitIds.size > 0 ? selectedPlayerUnits : playerUnits;
 
 
