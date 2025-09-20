@@ -11,7 +11,7 @@ export const HEROES_DATA: Hero[] = [
     skills: [
       { id: 1, name: "Frappe Puissante", description: "Un coup puissant qui inflige 150 dégâts.", damage: 150, cooldown: 5 },
       { id: 2, name: "Charge Bestiale", description: "Fonce sur l'ennemi, l'étourdissant pendant 1 seconde.", damage: 80, cooldown: 10 },
-      { id_3: 3, name: "Cri de Fureur", description: "Augmente sa propre attaque de 30% pendant 5 secondes.", damage: 0, cooldown: 12 },
+      { id: 3, name: "Cri de Fureur", description: "Augmente sa propre attaque de 30% pendant 5 secondes.", damage: 0, cooldown: 12 },
       { id: 4, name: "Impact Dévastateur", description: "Frappe le sol, infligeant 200 dégâts de zone.", damage: 200, cooldown: 18 }
     ],
     stats: { hp: 2200, maxHp: 2200, resource: 100, maxResource: 100, atk: 160, def: 120, spd: 1.0 },

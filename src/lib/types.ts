@@ -16,6 +16,7 @@ export type Hero = {
   id: string;
   name: string;
   class: 'Valkyrie' | 'Mage' | 'Blindé' | 'Archer' | 'Assassin';
+  composition: UnitComposition;
   skills: Skill[];
   stats: {
     hp: number;
@@ -27,7 +28,6 @@ export type Hero = {
     spd: number;
   };
   rarity: 'Commun' | 'Rare' | 'Epique' | 'Légendaire';
-  composition: UnitComposition;
 };
 
 
