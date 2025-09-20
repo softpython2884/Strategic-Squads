@@ -1,4 +1,5 @@
 
+
 /**
  * @fileOverview The main game loop for the server.
  * This file handles the game's tick rate and processes game state updates.
@@ -43,8 +44,8 @@ export async function startGameLoop() {
     return;
   }
   console.log(`Starting game loop with a tick rate of ${TICK_RATE_MS}ms.`);
-  // Reset game state for a new game
-  gameState.reset();
+  // This is the critical change: reset is called here, ONCE, when the loop starts.
+  gameState.reset(); 
   tickCount = 0;
   gameLoopInterval = setInterval(gameTick, TICK_RATE_MS);
 }
@@ -61,3 +62,4 @@ export async function stopGameLoop() {
     console.log('Game loop is not running.');
   }
 }
+

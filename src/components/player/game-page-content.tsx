@@ -5,7 +5,7 @@
 import React, { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import type { Unit, Team, Ping, UnitComposition } from '@/lib/types';
+import type { Unit, Team, Ping } from '@/lib/types';
 import GameMap from "@/components/player/game-map";
 import TeamPanel from './hud/team-panel';
 import SkillBar from './hud/skill-bar';
@@ -44,11 +44,11 @@ export default function GamePageContent() {
     // Client-side state
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
-    const [mapDimensions, setMapDimensions] = useState({ width: 2048, height: 2048 });
+    const [mapDimensions, setMapDimensions] = useState<{ width: number, height: number } | null>(null);
     
     // Camera state
     const [zoom, setZoom] = useState(1.0);
-    const [cameraPosition, setCameraPosition] = useState({ x: mapDimensions.width / 2, y: mapDimensions.height / 2 });
+    const [cameraPosition, setCameraPosition] = useState({ x: 1024, y: 1024 });
 
     const ws = useRef<WebSocket | null>(null);
     const panIntervalRef = useRef<number | null>(null);
@@ -102,6 +102,7 @@ export default function GamePageContent() {
     }, []);
 
     const centerCameraOnSquad = useCallback(() => {
+        if (!mapDimensions) return;
         const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
         if (playerUnits.length > 0) {
             const avgX = playerUnits.reduce((sum, u) => sum + (u.position.x / 100 * mapDimensions.width), 0) / playerUnits.length;
@@ -129,6 +130,7 @@ export default function GamePageContent() {
     }, [isStrategicMapOpen, centerCameraOnSquad]);
 
     useEffect(() => {
+        if (!mapDimensions) return;
         const handleMouseMove = (e: MouseEvent) => {
             const edgeSize = 30; 
             const panSpeed = 15; 
@@ -276,6 +278,10 @@ export default function GamePageContent() {
         });
     }, []);
 
+    if (!mapDimensions) {
+        return <GameMapLoading />;
+    }
+
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const playerTeamId = playerUnits[0]?.teamId;
     
@@ -346,7 +352,7 @@ export default function GamePageContent() {
                     cameraPosition={cameraPosition}
                 />
                 <GameTimer remainingTime={gameTime} />
-                <TeamPanel teamUnits={allPlayerTeamUnits} teams={teams} currentPlayerId={pseudo} />
+                <TeamPanel teamUnits={allPlayerTeamUnits} currentPlayerId={pseudo} />
                 <ObjectivesPanel squadComposition={playerUnits[0]?.composition} />
                 <MiniMap 
                     units={visibleUnits}
@@ -370,3 +376,4 @@ export default function GamePageContent() {
         </main>
     );
 }
+
