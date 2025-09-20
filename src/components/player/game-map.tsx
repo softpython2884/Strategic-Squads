@@ -62,7 +62,7 @@ const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted }: { unit: Unit; isP
             <div className="relative w-12 h-12 cursor-pointer group">
                  <div className={cn(
                     "absolute inset-0 rounded-full border-2 transition-all duration-300",
-                    isPlayerUnit ? "border-cyan-400" : team?.bgClass.replace('bg-', 'border-'),
+                    isPlayerUnit ? "border-cyan-400" : (team?.bgClass ? team.bgClass.replace('bg-', 'border-') : 'border-gray-500'),
                     glowClass,
                     isTargeted && "border-red-500 animate-pulse border-4" // Visual feedback for attack command
                 )}>
@@ -116,10 +116,10 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, c
         const targetY = (worldY / (mapRect.height)) * 100;
         
         const clickedUnit = allUnits.find(unit => {
-            const unitScreenX = (unit.position.x / 100) * mapRect.width;
-            const unitScreenY = (unit.position.y / 100) * mapRect.height;
+            const unitScreenX = (unit.position.x / 100) * 2048; // Using world dimensions (2048)
+            const unitScreenY = (unit.position.y / 100) * 2048;
             const distance = Math.sqrt(Math.pow(worldX - unitScreenX, 2) + Math.pow(worldY - unitScreenY, 2));
-            return distance < 20; // Click radius in world units
+            return distance < 32; // Click radius in world units (was 20, increased for easier clicking)
         });
 
         if (event.altKey) {
@@ -163,8 +163,8 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, c
                     className="relative w-[2048px] h-[2048px] origin-top-left"
                      animate={{
                         scale: zoom,
-                        translateX: `${-cameraPosition.x * zoom + (mapContainerRef.current?.clientWidth ?? 0) / 2}px`,
-                        translateY: `${-cameraPosition.y * zoom + (mapContainerRef.current?.clientHeight ?? 0) / 2}px`,
+                        x: -cameraPosition.x * zoom + (mapContainerRef.current?.clientWidth ?? 0) / 2,
+                        y: -cameraPosition.y * zoom + (mapContainerRef.current?.clientHeight ?? 0) / 2,
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
@@ -184,8 +184,8 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, c
                                 key={unit.id}
                                 layout
                                 initial={{
-                                    left: `calc(${unit.position.x / 100 * 2048}px)`,
-                                    top: `calc(${unit.position.y / 100 * 2048}px)`,
+                                    left: `${unit.position.x / 100 * 2048}px`,
+                                    top: `${unit.position.y / 100 * 2048}px`,
                                 }}
                                 animate={{
                                     left: `calc(${unit.position.x / 100 * 2048}px)`,

@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { TowerControl, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PingDisplay from './ping-display';
+import { objectives } from '@/lib/objectives';
+
 
 type StrategicMapOverlayProps = {
   isOpen: boolean;
@@ -18,13 +20,6 @@ type StrategicMapOverlayProps = {
   onPing: (coords: { x: number; y: number }) => void;
 };
 
-// Same static objectives as MiniMap
-const objectives = [
-    { id: 'tower-n', name: "Tour Nord", position: { x: 20, y: 20 }, teamId: 'red' },
-    { id: 'tower-s', name: "Tour Sud", position: { x: 80, y: 80 }, teamId: 'blue' },
-    { id: 'idol-n', name: "Idole Nord", position: { x: 15, y: 15 }, teamId: 'red' },
-    { id: 'idol-s', name: "Idole Sud", position: { x: 85, y: 85 }, teamId: 'blue' },
-];
 
 const StrategicMapOverlay = ({ isOpen, onClose, units, teams, pings, onPing }: StrategicMapOverlayProps) => {
   const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {

@@ -13,6 +13,9 @@ import ObjectivesPanel from './hud/objectives-panel';
 import GameTimer from './hud/game-timer';
 import { moveUnit } from '@/app/actions';
 import StrategicMapOverlay from './hud/strategic-map-overlay';
+import FogOfWar from './hud/fog-of-war';
+import { objectives } from '@/lib/objectives';
+
 
 function GameMapLoading() {
     return (
@@ -27,6 +30,7 @@ function GameMapLoading() {
 
 const PING_DURATION_MS = 5000;
 const MAP_DIMENSIONS = { width: 2048, height: 2048 }; // World size in pixels
+const VISION_RADIUS = 15; // Percentage of map width/height
 
 export default function GamePageContent() {
     const searchParams = useSearchParams();
@@ -182,8 +186,6 @@ export default function GamePageContent() {
         const playerUnitsToMove = units.filter(u => u.control.controllerPlayerId === pseudo);
         if (playerUnitsToMove.length === 0) return;
         
-        // This is a simplification. In a real game, you'd send one command
-        // and the server would handle moving all selected units.
         ws.current?.send(JSON.stringify({
             type: 'move',
             payload: {
@@ -221,9 +223,32 @@ export default function GamePageContent() {
         }));
     }, [pseudo]);
 
+    // --- FOG OF WAR LOGIC ---
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
-    const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
     const playerTeamId = playerUnits[0]?.teamId;
+    
+    const visionSources = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.combat.status === 'alive').map(u => u.position) : [];
+    
+    // Also add allied objectives to vision sources
+    const alliedObjectives = objectives.filter(obj => obj.teamId === playerTeamId);
+    visionSources.push(...alliedObjectives.map(o => o.position));
+
+    const isVisible = (unitPos: {x: number, y: number}) => {
+        for (const source of visionSources) {
+            const dx = unitPos.x - source.x;
+            const dy = unitPos.y - source.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            if (distance < VISION_RADIUS) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const visibleEnemyUnits = units.filter(u => u.teamId !== playerTeamId && isVisible(u.position));
+    const alliedUnits = units.filter(u => u.teamId === playerTeamId);
+
+
     const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
     const squadComposition = playerUnits[0]?.composition;
@@ -233,7 +258,7 @@ export default function GamePageContent() {
             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
                     playerUnits={playerUnits}
-                    otherUnits={otherUnits}
+                    otherUnits={[...alliedUnits.filter(u => u.control.controllerPlayerId !== pseudo), ...visibleEnemyUnits]}
                     teams={teams}
                     pings={pings}
                     zoom={zoom}
@@ -248,6 +273,13 @@ export default function GamePageContent() {
             
             {/* HUD Elements */}
             <div className="absolute inset-0 z-10 pointer-events-none">
+                <FogOfWar 
+                    visionSources={visionSources} 
+                    visionRadius={VISION_RADIUS}
+                    mapDimensions={MAP_DIMENSIONS}
+                    zoom={zoom}
+                    cameraPosition={cameraPosition}
+                />
                 <GameTimer remainingTime={gameTime} />
                 <TeamPanel teamMates={teamMates} teams={teams}/>
                 <ObjectivesPanel squadComposition={squadComposition} />
