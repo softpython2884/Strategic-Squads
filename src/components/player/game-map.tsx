@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 import PingDisplay from './hud/ping-display';
-import SimpleMapRenderer from './simple-map-renderer';
 
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
@@ -274,7 +273,7 @@ export default function GameMap({
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
-                    <SimpleMapRenderer />
+                    {/* The map is now just a plain background. */}
 
                     <AnimatePresence>
                         {allUnits.map((unit) => (
@@ -324,3 +323,5 @@ export default function GameMap({
         </TooltipProvider>
     );
 }
+
+    
