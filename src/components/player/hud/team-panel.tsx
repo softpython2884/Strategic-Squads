@@ -33,6 +33,12 @@ const PlayerPortrait = ({ player, team }: { player: PlayerGroup, team: Team }) =
     const healthPercentage = (health / maxHealth) * 100;
     const resourcePercentage = (resource / maxResource) * 100;
 
+    // Calculate circumference for the circular bars
+    const radius = 16;
+    const circumference = 2 * Math.PI * radius;
+    const healthStrokeDashoffset = circumference - (healthPercentage / 100) * circumference;
+    const resourceStrokeDashoffset = circumference - (resourcePercentage / 100) * circumference;
+
     return (
         <div className="relative flex items-center gap-3 p-2 rounded-lg bg-black/60 border border-white/10 pointer-events-auto cursor-pointer hover:bg-white/10">
             <div className="relative">
@@ -42,36 +48,48 @@ const PlayerPortrait = ({ player, team }: { player: PlayerGroup, team: Team }) =
                 </Avatar>
                 
                 {/* Status Ring */}
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 36 36">
-                    <path
-                        className="text-green-500"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={`${healthPercentage * 0.5}, 50`}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
-                    <path
+                <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rotate-[-90deg]" viewBox="0 0 36 36" style={{width: '68px', height: '68px'}}>
+                    {/* Background for rings */}
+                    <circle cx="18" cy="18" r={radius} className="text-black/30" stroke="currentColor" strokeWidth="2.5" fill="none"/>
+                    
+                    {/* Mana Bar */}
+                    <circle
+                        cx="18"
+                        cy="18"
+                        r={radius}
                         className="text-blue-500"
                         stroke="currentColor"
-                        strokeWidth="2"
+                        strokeWidth="2.5"
                         fill="none"
                         strokeLinecap="round"
-                        strokeDasharray={`${resourcePercentage * 0.5}, 50`}
-                        strokeDashoffset="-25"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={resourceStrokeDashoffset}
+                    />
+
+                     {/* Health Bar */}
+                     <circle
+                        cx="18"
+                        cy="18"
+                        r={radius}
+                        className="text-green-500"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={healthStrokeDashoffset + (circumference - (circumference * 0.5))}
+                        pathLength={circumference/2}
                     />
                 </svg>
 
-                <Badge className="absolute bottom-0 right-0 w-6 h-6 p-0 flex items-center justify-center text-sm font-bold">
+                <Badge className="absolute bottom-0 right-0 w-6 h-6 p-0 flex items-center justify-center text-sm font-bold border-2 border-background">
                     {mainUnit.progression.level}
                 </Badge>
             </div>
             <div className="flex-1 text-white">
                 <p className="font-bold truncate">{player.playerId}</p>
                 <div className="flex items-center gap-1 text-xs text-white/70">
-                    <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden">
+                    <div className="w-full h-1 bg-black/50 rounded-full overflow-hidden border border-white/20">
                         <div style={{width: `${(mainUnit.progression.xp / mainUnit.progression.xpToNextLevel) * 100}%`}} className="h-full bg-yellow-400"></div>
                     </div>
                 </div>
@@ -99,17 +117,17 @@ const TeamPanel = ({ teamMates, teams }: { teamMates: Unit[], teams: {[key: stri
 
     // Fill with empty slots to always show 4
     while(players.length < 4) {
-        players.push({playerId: `Joueur ${players.length + 1}`, units: []});
+        players.push({playerId: ``, units: []});
     }
 
     if (!team) return null;
 
     return (
-        <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <div className="absolute top-4 right-4 flex flex-col gap-2 w-52">
             {players.slice(0,4).map((player, index) => (
                player.units.length > 0 
                 ? <PlayerPortrait key={player.playerId} player={player} team={team} />
-                : <div key={index} className="h-[76px] w-[200px] bg-black/50 rounded-lg border border-white/10"></div>
+                : <div key={index} className="h-[76px] w-full bg-black/50 rounded-lg border border-white/10"></div>
             ))}
         </div>
     );
