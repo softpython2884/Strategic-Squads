@@ -363,4 +363,8 @@ export default function GamePageContent() {
                 units={units}
                 teams={teams}
                 pings={pings}
-                onPing={handlePing
+                onPing={handlePing}
+            />
+        </main>
+    );
+}
