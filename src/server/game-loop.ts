@@ -8,13 +8,16 @@
 import { gameState } from '@/server/game-state';
 import { broadcastGameState } from './websocket-server';
 
-const TICK_RATE_MS = 250;
+const TICK_RATE_MS = 1000; // Let's update once per second for the timer
 let gameLoopInterval: NodeJS.Timeout | null = null;
 let tickCount = 0;
 
 async function gameTick() {
   tickCount++;
   // console.log(`Game Tick #${tickCount} at ${new Date().toISOString()}`);
+
+  // Process game time and associated logic (damage multipliers, etc.)
+  gameState.processGameTick();
 
   // Process cooldowns for all units
   gameState.processCooldowns();

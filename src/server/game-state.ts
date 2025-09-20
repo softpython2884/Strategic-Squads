@@ -65,10 +65,13 @@ const unitCompositionData = [
 // This will act as our "live" database for the game state.
 // =================================================================
 
+const GAME_DURATION_SECONDS = 25 * 60;
+
 let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
 let liveTeams = {...teams};
 let isGameStarted = false;
-
+let gameTime = GAME_DURATION_SECONDS; // Countdown timer
+let damageMultiplier = 1;
 
 export const gameState = {
   getUnits: () => liveUnits,
@@ -77,9 +80,13 @@ export const gameState = {
   getTeamResourceData: () => teamResourceData,
   getUnitCompositionData: () => unitCompositionData,
   isGameStarted: () => isGameStarted,
+  getGameTime: () => gameTime,
+  getDamageMultiplier: () => damageMultiplier,
 
   startGame: () => {
+    if (isGameStarted) return;
     isGameStarted = true;
+    gameTime = GAME_DURATION_SECONDS;
     console.log("Game has been started.");
   },
 
@@ -192,12 +199,13 @@ export const gameState = {
   },
   
   processCooldowns: () => {
+    const TICK_INTERVAL_S = 1; // Corresponds to game-loop.ts TICK_RATE_MS
     liveUnits = liveUnits.map(unit => {
       const newCooldowns = { ...unit.combat.cooldowns };
       let hasChanged = false;
       for (const skillId in newCooldowns) {
         if (newCooldowns[skillId] > 0) {
-          newCooldowns[skillId]--;
+          newCooldowns[skillId] = Math.max(0, newCooldowns[skillId] - TICK_INTERVAL_S);
           hasChanged = true;
         }
       }
@@ -208,11 +216,36 @@ export const gameState = {
     });
   },
 
+  processGameTick: () => {
+    if (!isGameStarted) return;
+
+    gameTime = Math.max(0, gameTime - 1);
+    
+    const elapsedTime = GAME_DURATION_SECONDS - gameTime;
+    
+    // After 25 mins (i.e. timer is at 0 and goes into negative)
+    if (elapsedTime >= (25 * 60) && elapsedTime < (30 * 60)) {
+        if (damageMultiplier !== 2) {
+            console.log("Game time > 25 mins. Damage multiplier is now x2.");
+            damageMultiplier = 2;
+        }
+    } 
+    // After 30 mins
+    else if (elapsedTime >= (30 * 60)) {
+        if (damageMultiplier !== 5) {
+            console.log("Game time > 30 mins. Damage multiplier is now x5.");
+            damageMultiplier = 5;
+        }
+    }
+  },
+
   reset: () => {
     // Deep copy to avoid mutation issues on subsequent resets
     liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
     liveTeams = {...teams};
     isGameStarted = false;
+    gameTime = GAME_DURATION_SECONDS;
+    damageMultiplier = 1;
     console.log('Game state has been reset.');
   }
 };

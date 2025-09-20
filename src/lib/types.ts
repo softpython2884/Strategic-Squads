@@ -69,7 +69,7 @@ export type Unit = {
 
   // Combat State
   combat: {
-    cooldowns: { [skillId: string]: number };
+    cooldowns: { [skillId: string]: number }; // Cooldown remaining in seconds
     buffs: string[];
     debuffs: string[];
     status: UnitStatus;

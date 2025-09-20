@@ -41,9 +41,11 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
         case 'useSkill':
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId}`);
             const skillUnit = gameState.getUnits().find(u => u.id === action.payload.unitId);
-            if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId) {
-                const FIVE_SECONDS_IN_TICKS = 5 * (1000 / 250); // Assuming 250ms tick rate
-                gameState.useSkill(action.payload.unitId, action.payload.skillId, FIVE_SECONDS_IN_TICKS);
+            const hero = gameState.getUnits().find(h => h.heroId === skillUnit?.heroId);
+            const skill = hero?.skills.find(s => s.id.toString() === action.payload.skillId);
+
+            if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId && skill) {
+                gameState.useSkill(action.payload.unitId, action.payload.skillId, skill.cooldown);
                 // The game loop will broadcast the state change
             }
             break;
@@ -80,6 +82,7 @@ export async function startWebSocketServer() {
             payload: {
                 units: gameState.getUnits(),
                 teams: gameState.getTeams(),
+                gameTime: gameState.getGameTime(),
                 gameStarted: gameState.isGameStarted(),
             }
         }
@@ -121,6 +124,7 @@ export async function broadcastGameState() {
         payload: {
             units: gameState.getUnits(),
             teams: gameState.getTeams(),
+            gameTime: gameState.getGameTime(),
             gameStarted: gameState.isGameStarted(),
         }
     };

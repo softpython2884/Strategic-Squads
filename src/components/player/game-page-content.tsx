@@ -29,6 +29,7 @@ export default function GamePageContent() {
 
     const [units, setUnits] = useState<Unit[]>([]);
     const [teams, setTeams] = useState<{ [key: string]: Team }>({});
+    const [gameTime, setGameTime] = useState(0);
 
     useEffect(() => {
         const wsUrl = `ws://${window.location.hostname}:8080`;
@@ -42,6 +43,7 @@ export default function GamePageContent() {
                 if (message.type === 'full-state' || message.type === 'update-state') {
                     setUnits(message.payload.units);
                     setTeams(message.payload.teams);
+                    setGameTime(message.payload.gameTime);
                 }
             } catch (error) {
                 console.error("Error parsing WebSocket message:", error);
@@ -75,7 +77,7 @@ export default function GamePageContent() {
             
             {/* HUD Elements */}
             <div className="absolute inset-0 z-10 pointer-events-none">
-                <GameTimer />
+                <GameTimer remainingTime={gameTime} />
                 <TeamPanel teamMates={teamMates} teams={teams}/>
                 <ObjectivesPanel />
                 <MiniMap />
