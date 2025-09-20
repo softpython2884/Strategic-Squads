@@ -20,6 +20,7 @@ type ServerAction =
     | { type: 'joinGame', payload: JoinGameInput }
     | { type: 'moveUnit', payload: { playerId: string, unitId: string, position: { x: number, y: number } } }
     | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
+    | { type: 'attack', payload: { playerId: string, targetId: string | null, position: {x: number, y: number} } }
     | { type: 'startGame' }
     | { type: 'ping', payload: PingPayload };
 
@@ -39,12 +40,17 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             }
             break;
         case 'moveUnit':
-            console.log(`[Game Server] Handling moveUnit for ${action.payload.unitId}`);
+            // console.log(`[Game Server] Handling moveUnit for ${action.payload.unitId}`);
             const unit = gameState.getUnits().find(u => u.id === action.payload.unitId);
             if (unit && unit.control.controllerPlayerId === action.payload.playerId) {
                 gameState.updateUnitPosition(action.payload.unitId, action.payload.position.x, action.payload.position.y);
                 // The game loop will broadcast the state, so we don't broadcast here to avoid extra messages
             }
+            break;
+        case 'attack':
+            console.log(`[Game Server] Handling attack for player ${action.payload.playerId}`);
+            // TODO: Implement attack logic on the server
+            // Find the player's units, determine targets, calculate damage, etc.
             break;
         case 'useSkill':
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId}`);

@@ -1,14 +1,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
-import { moveUnit } from '@/app/actions';
-import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 import PingDisplay from './hud/ping-display';
@@ -34,9 +32,11 @@ type GameMapProps = {
     teams: { [key: string]: Team };
     pings: Ping[];
     onPing: (coords: { x: number, y: number }) => void;
+    onMove: (coords: { x: number, y: number }) => void;
+    onAttack: (target: Unit | null, coords: { x: number, y: number }) => void;
 };
 
-const UnitDisplay = ({ unit, isPlayerUnit, team }: { unit: Unit; isPlayerUnit: boolean, team: Team }) => {
+const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean }) => {
     const ClassIcon = classIcons[unit.type];
     const RoleIcon = compositionIcons[unit.composition];
     
@@ -56,10 +56,11 @@ const UnitDisplay = ({ unit, isPlayerUnit, team }: { unit: Unit; isPlayerUnit: b
         <div className="relative flex flex-col items-center w-16">
             {/* Unit Icon */}
             <div className="relative w-12 h-12 cursor-pointer group">
-                <div className={cn(
+                 <div className={cn(
                     "absolute inset-0 rounded-full border-2 transition-all duration-300",
                     isPlayerUnit ? "border-cyan-400" : team?.bgClass.replace('bg-', 'border-'),
-                    glowClass
+                    glowClass,
+                    isTargeted && "border-red-500 animate-pulse border-4" // Visual feedback for attack command
                 )}>
                     <div className="relative flex items-center justify-center w-full h-full">
                         {ClassIcon && <ClassIcon className={cn("w-6 h-6", team?.textClass)} />}
@@ -89,36 +90,43 @@ const UnitDisplay = ({ unit, isPlayerUnit, team }: { unit: Unit; isPlayerUnit: b
 }
 
 
-export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing }: GameMapProps) {
-    const searchParams = useSearchParams();
-    const pseudo = searchParams.get('pseudo');
+export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing, onMove, onAttack }: GameMapProps) {
     const allUnits = [...playerUnits, ...otherUnits];
+    const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
 
-    const handleMapClick = async (event: React.MouseEvent<HTMLDivElement>) => {
-        if (!pseudo) return;
-
+    const handleInteraction = (event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
         const mapRect = event.currentTarget.getBoundingClientRect();
         const clickX = event.clientX - mapRect.left;
         const clickY = event.clientY - mapRect.top;
 
         const targetX = (clickX / mapRect.width) * 100;
         const targetY = (clickY / mapRect.height) * 100;
+        
+        // This is a very basic way to check if a unit was clicked. A real game would use a more robust collision detection.
+        const clickedUnit = allUnits.find(unit => {
+            const unitScreenX = (unit.position.x / 100) * mapRect.width;
+            const unitScreenY = (unit.position.y / 100) * mapRect.height;
+            const distance = Math.sqrt(Math.pow(clickX - unitScreenX, 2) + Math.pow(clickY - unitScreenY, 2));
+            return distance < 30; // 30px radius for clicking a unit
+        });
 
         if (event.altKey) {
             onPing({ x: targetX, y: targetY });
             return;
         }
 
-        if (playerUnits.length === 0) return;
-        
-        try {
-            // Move all player units to the clicked location.
-            const movePromises = playerUnits.map(unit => 
-                moveUnit(pseudo, unit.id, { x: targetX, y: targetY })
-            );
-            await Promise.all(movePromises);
-        } catch (error) {
-            console.error("Failed to request unit move:", error);
+        if (isContextMenu) { // Right-click for attack
+            event.preventDefault();
+            onAttack(clickedUnit || null, { x: targetX, y: targetY });
+            if (clickedUnit && !playerUnits.find(u => u.id === clickedUnit.id)) {
+                 setTargetedUnitId(clickedUnit.id);
+                 setTimeout(() => setTargetedUnitId(null), 500); // Visual feedback for 0.5s
+            }
+        } else { // Left-click for move
+            if (!clickedUnit) { // Only move if clicking on the ground
+                onMove({ x: targetX, y: targetY });
+            }
+            // Logic for selecting units would go here
         }
     };
 
@@ -126,15 +134,16 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing 
     return (
         <TooltipProvider>
             <div
-                className="relative w-full h-full overflow-hidden bg-muted select-none"
-                onClick={handleMapClick}
+                className="relative w-full h-full overflow-hidden select-none bg-muted"
+                onClick={(e) => handleInteraction(e, false)}
+                onContextMenu={(e) => handleInteraction(e, true)}
             >
                 <Image
                     src="https://picsum.photos/seed/map/2048/2048"
                     alt="Game Map"
                     layout="fill"
                     objectFit="cover"
-                    className="opacity-50 pointer-events-none"
+                    className="object-none opacity-50 pointer-events-none"
                     data-ai-hint="fantasy map"
                     priority
                 />
@@ -157,8 +166,9 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing 
                         >
                             <UnitDisplay 
                                 unit={unit} 
-                                isPlayerUnit={unit.control.controllerPlayerId === pseudo} 
+                                isPlayerUnit={playerUnits.some(p => p.id === unit.id)} 
                                 team={teams[unit.teamId]}
+                                isTargeted={unit.id === targetedUnitId}
                             />
                         </motion.div>
                     ))}

@@ -11,6 +11,7 @@ import SkillBar from './hud/skill-bar';
 import MiniMap from './hud/mini-map';
 import ObjectivesPanel from './hud/objectives-panel';
 import GameTimer from './hud/game-timer';
+import { moveUnit } from '@/app/actions';
 
 function GameMapLoading() {
     return (
@@ -89,6 +90,32 @@ export default function GamePageContent() {
         }));
 
     }, [pseudo]);
+
+    const handleMove = useCallback(async (coords: { x: number, y: number }) => {
+        if (!pseudo) return;
+        
+        const playerUnitsToMove = units.filter(u => u.control.controllerPlayerId === pseudo);
+        if (playerUnitsToMove.length === 0) return;
+        
+        try {
+            // This is a simplified move command. A real implementation might
+            // calculate individual paths or formations.
+            const movePromises = playerUnitsToMove.map(unit => 
+                moveUnit(pseudo, unit.id, coords)
+            );
+            await Promise.all(movePromises);
+        } catch (error) {
+            console.error("Failed to request unit move:", error);
+        }
+    }, [pseudo, units]);
+
+    const handleAttack = useCallback((target: Unit | null, coords: { x: number, y: number }) => {
+        if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
+        
+        console.log('Attack command issued!', { target, coords });
+        // Here we would send an 'attack' message via WebSocket
+        // For now, we can just log it or show a visual effect.
+    }, [pseudo]);
     
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
@@ -105,6 +132,8 @@ export default function GamePageContent() {
                     teams={teams}
                     pings={pings}
                     onPing={handlePing}
+                    onMove={handleMove}
+                    onAttack={handleAttack}
                 />
             </Suspense>
             
