@@ -1,5 +1,5 @@
 
-import type { Unit, Team, UnitComposition } from '@/lib/types';
+import type { Unit, Team, UnitComposition, Objective } from '@/lib/types';
 import type { JoinGameInput, SquadUnit } from '@/app/actions';
 import { HEROES_DATA } from '@/lib/heroes';
 import * as fs from 'fs';
@@ -8,48 +8,132 @@ import { Grid, AStarFinder } from 'pathfinding';
 
 
 // =================================================================
-// Pathfinding Setup
+// Pathfinding & Map Loading
 // =================================================================
 let grid: Grid;
 let mapWidth: number;
 let mapHeight: number;
+let tileWidth: number;
+let tileHeight: number;
 
-function initializePathfindingGrid() {
+let mapObjectives: Objective[] = [];
+const spawnPoints: { [key: string]: { x: number, y: number } } = {
+    blue: { x: 10, y: 85 },
+    red: { x: 90, y: 15 },
+};
+
+
+function initializeMapAndPathfinding() {
+    const tempObjectives: Objective[] = [];
     try {
         const mapPath = path.join(process.cwd(), 'public', 'map.json');
         const mapData = JSON.parse(fs.readFileSync(mapPath, 'utf8'));
 
         mapWidth = mapData.width;
         mapHeight = mapData.height;
+        tileWidth = mapData.tilewidth;
+        tileHeight = mapData.tileheight;
         grid = new Grid(mapWidth, mapHeight);
 
-        // Assuming a wall layer named 'admin' (based on user note)
-        const wallLayer = mapData.layers.find((l: any) => l.name === 'admin');
-        if (wallLayer) {
+        // --- Find Layers ---
+        const wallLayer = mapData.layers.find((l: any) => l.name === 'admin'); // Walls
+        const objectivesLayer = mapData.layers.find((l: any) => l.name === 'dev' || l.name === 'helper'); // Towers, Idols, Spawns
+
+        // --- Process Walls for Pathfinding ---
+        if (wallLayer && wallLayer.type === 'tilelayer') {
             for (let y = 0; y < mapHeight; y++) {
                 for (let x = 0; x < mapWidth; x++) {
                     const tileIndex = y * mapWidth + x;
-                    const tileGid = wallLayer.data[tileIndex];
-                    if (tileGid !== 0) {
+                    if (wallLayer.data[tileIndex] !== 0) {
                         grid.setWalkableAt(x, y, false);
                     }
                 }
             }
-            console.log('Pathfinding grid initialized with walls.');
+            console.log('Pathfinding grid initialized with walls from "admin" layer.');
         } else {
-            console.warn("Could not find a 'admin' layer for walls in map.json. All tiles are walkable.");
+            console.warn("Could not find a 'admin' tile layer for walls in map.json. All tiles are walkable.");
         }
+
+        // --- Process Objectives & Spawns ---
+        // NOTE: This assumes objectives are placed using tiles on a specific layer.
+        // A better approach is using an Object Layer in Tiled.
+        const devLayer = mapData.layers.find((l: any) => l.name === 'dev'); // Towers/Idols
+        const helperLayer = mapData.layers.find((l: any) => l.name === 'helper'); // Spawns
+        const blueTowerTileset = mapData.tilesets.find((ts: any) => ts.name === 'blue_tower');
+        const redTowerTileset = mapData.tilesets.find((ts: any) => ts.name === 'red_tower');
+        const blueSpawnTileset = mapData.tilesets.find((ts: any) => ts.name === 'blue_spawn');
+        const redSpawnTileset = mapData.tilesets.find((ts: any) => ts.name === 'red_spawn');
+        
+        // This is a simplified parser based on user's notes.
+        // It assumes the top-left tile of a 2x2 structure is the anchor.
+        if (devLayer && devLayer.type === 'tilelayer') {
+             for (let y = 0; y < mapHeight -1; y++) {
+                for (let x = 0; x < mapWidth -1; x++) {
+                    const tileIndex = y * mapWidth + x;
+                    const gid = devLayer.data[tileIndex];
+                    if (gid === 0) continue;
+
+                    let team: 'blue' | 'red' | null = null;
+                    let type: 'tower' | 'idol' | null = null;
+                    
+                    if (blueTowerTileset && gid >= blueTowerTileset.firstgid && gid < blueTowerTileset.firstgid + blueTowerTileset.tilecount) {
+                        team = 'blue';
+                        type = 'tower';
+                    } else if (redTowerTileset && gid >= redTowerTileset.firstgid && gid < redTowerTileset.firstgid + redTowerTileset.tilecount) {
+                        team = 'red';
+                        type = 'tower';
+                    }
+                    
+                    if (team && type) {
+                         tempObjectives.push({
+                            id: `${type}-${team}-${x}-${y}`,
+                            name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${team.charAt(0).toUpperCase() + team.slice(1)}`,
+                            position: { x: (x + 1) / mapWidth * 100, y: (y + 1) / mapHeight * 100 }, // Center of the 2x2 structure
+                            teamId: team,
+                            type: type,
+                            stats: { hp: 5000, maxHp: 5000 }
+                        });
+                        // Mark the 2x2 area as unwalkable
+                        grid.setWalkableAt(x, y, false);
+                        grid.setWalkableAt(x+1, y, false);
+                        grid.setWalkableAt(x, y+1, false);
+                        grid.setWalkableAt(x+1, y+1, false);
+                        // Skip the next tile to avoid double counting
+                        x++; 
+                    }
+                }
+            }
+        }
+        
+         if (helperLayer && helperLayer.type === 'tilelayer') {
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                     const tileIndex = y * mapWidth + x;
+                     const gid = helperLayer.data[tileIndex];
+                     if (gid === 0) continue;
+                     
+                      if (blueSpawnTileset && gid >= blueSpawnTileset.firstgid) {
+                         spawnPoints.blue = { x: x / mapWidth * 100, y: y / mapHeight * 100 };
+                      } else if (redSpawnTileset && gid >= redSpawnTileset.firstgid) {
+                         spawnPoints.red = { x: x / mapWidth * 100, y: y / mapHeight * 100 };
+                      }
+                }
+            }
+            console.log("Updated spawn points from 'helper' layer:", spawnPoints);
+         }
+
+
     } catch (error) {
-        console.error('Failed to initialize pathfinding grid:', error);
-        // Create a walkable grid if map loading fails
-        mapWidth = 64;
-        mapHeight = 64;
+        console.error('Failed to initialize map data:', error);
+        mapWidth = 64; mapHeight = 64; tileWidth = 32; tileHeight = 32;
         grid = new Grid(mapWidth, mapHeight);
     }
+    mapObjectives = tempObjectives;
+    console.log(`Loaded ${mapObjectives.length} objectives from map file.`);
 }
 
 // Call this once on server startup
-initializePathfindingGrid();
+initializeMapAndPathfinding();
 
 
 // =================================================================
@@ -115,17 +199,56 @@ const unitCompositionData = [
 
 // =================================================================
 // In-Memory Game State Manager
-// This will act as our "live" database for the game state.
 // =================================================================
 
 const GAME_DURATION_SECONDS = 25 * 60;
 const SKILL_RANGE = 15; // Generic skill range for now
 
-let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
+let liveUnits: Unit[] = [];
 let liveTeams = {...teams};
 let isGameStarted = false;
 let gameTime = GAME_DURATION_SECONDS; // Countdown timer
 let damageMultiplier = 1;
+
+
+function getInitialUnitsFromObjectives(): Unit[] {
+    return mapObjectives.map(obj => {
+        const unit: Unit = {
+            id: obj.id,
+            name: obj.name,
+            type: obj.type,
+            heroId: `objective_${obj.type}`,
+            teamId: obj.teamId as 'blue' | 'red',
+            composition: 'défense', // Objectives are defensive
+            position: obj.position,
+            stats: {
+                hp: obj.stats?.hp ?? 5000,
+                maxHp: obj.stats?.maxHp ?? 5000,
+                resource: 0,
+                maxResource: 0,
+                atk: 50, // Towers can attack
+                def: 200,
+                spd: 1,
+            },
+            progression: {
+                xp: 0,
+                level: 1,
+                xpToNextLevel: 99999,
+                respawnTimeRemaining: 0,
+            },
+            combat: {
+                cooldowns: {},
+                attackCooldown: 0,
+                buffs: [],
+                debuffs: [],
+                status: 'alive',
+            },
+            control: {}
+        };
+        return unit;
+    });
+}
+
 
 // Function to calculate distance between two units or a unit and a point
 const calculateDistance = (posA: {x: number, y: number}, posB: {x: number, y: number}): number => {
@@ -186,9 +309,7 @@ export const gameState = {
             return null;
         }
 
-        // Define spawn areas (percentages)
-        const spawnX = input.teamId === 'blue' ? 10 : 90;
-        const spawnY = input.teamId === 'blue' ? 90 : 10;
+        const spawnArea = spawnPoints[input.teamId];
 
         const newUnit: Unit = {
             id: `${input.pseudo}-${heroData.id}-${index}`,
@@ -199,8 +320,8 @@ export const gameState = {
             composition: input.squadType,
             position: { 
                 // Randomize spawn position slightly around the base
-                x: spawnX + (Math.random() - 0.5) * 8, 
-                y: spawnY + (Math.random() - 0.5) * 8
+                x: spawnArea.x + (Math.random() - 0.5) * 8, 
+                y: spawnArea.y + (Math.random() - 0.5) * 8
             },
             stats: {
                 ...heroData.stats,
@@ -234,15 +355,12 @@ export const gameState = {
      liveUnits = liveUnits.map(unit => {
       if (unitIds.includes(unit.id)) {
         if (unit.combat.status !== 'alive') return unit;
-
-        const TILE_WIDTH = 32;
-        const TILE_HEIGHT = 32;
         
         // Convert world % to grid coordinates
-        const startX = Math.floor(unit.position.x / 100 * mapWidth * TILE_WIDTH / TILE_WIDTH);
-        const startY = Math.floor(unit.position.y / 100 * mapHeight * TILE_HEIGHT / TILE_HEIGHT);
-        const endX = Math.floor(position.x / 100 * mapWidth * TILE_WIDTH / TILE_WIDTH);
-        const endY = Math.floor(position.y / 100 * mapHeight * TILE_HEIGHT / TILE_HEIGHT);
+        const startX = Math.floor(unit.position.x / 100 * mapWidth);
+        const startY = Math.floor(unit.position.y / 100 * mapHeight);
+        const endX = Math.floor(position.x / 100 * mapWidth);
+        const endY = Math.floor(position.y / 100 * mapHeight);
 
         const gridClone = grid.clone();
         const finder = new AStarFinder();
@@ -254,13 +372,15 @@ export const gameState = {
         const path = finder.findPath(startX, startY, endX, endY, gridClone);
 
         if (path && path.length > 0) {
+             // Convert path back to world coordinates
+            const worldPath = path.map(p => [(p[0] / mapWidth * 100), (p[1] / mapHeight * 100)]);
             return {
                 ...unit,
                 control: {
                     ...unit.control,
                     moveTarget: position, // Keep final destination
                     focus: undefined,
-                    path: path,
+                    path: worldPath,
                 }
             }
         } else {
@@ -413,21 +533,19 @@ export const gameState = {
 
   processUnitActions: () => {
     if (!isGameStarted) return;
-    const TILE_WIDTH = 32;
-    const TILE_HEIGHT = 32;
+
+    const speed = 1; // Simplified speed (units per tick)
+    const attackRange = 10;
 
     liveUnits = liveUnits.map(unit => {
       if (unit.combat.status !== 'alive') return unit;
       
-      const speed = 1; // Simplified speed (units per tick)
-      const attackRange = 10;
-
       // 1. Pathfinding Movement
       if (unit.control.path && unit.control.path.length > 0) {
         const nextNode = unit.control.path[0];
         const targetPos = {
-            x: (nextNode[0] / mapWidth) * 100,
-            y: (nextNode[1] / mapHeight) * 100,
+            x: nextNode[0],
+            y: nextNode[1],
         };
 
         const dist = calculateDistance(unit.position, targetPos);
@@ -515,12 +633,12 @@ export const gameState = {
   },
 
   reset: () => {
-    liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {}, attackCooldown: 0 }, progression: {...u.progression}}))];
+    initializeMapAndPathfinding();
+    liveUnits = getInitialUnitsFromObjectives();
     liveTeams = {...teams};
     isGameStarted = false;
     gameTime = GAME_DURATION_SECONDS;
     damageMultiplier = 1;
     console.log('Game state has been reset.');
-    initializePathfindingGrid();
   }
 };

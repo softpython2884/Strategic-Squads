@@ -1,7 +1,22 @@
 
-export const objectives = [
-  { id: 'tower-n', name: "Tour Nord", position: { x: 20, y: 20 }, teamId: 'red' },
-  { id: 'tower-s', name: "Tour Sud", position: { x: 80, y: 80 }, teamId: 'blue' },
-  { id: 'idol-n', name: "Idole Nord", position: { x: 15, y: 15 }, teamId: 'red' },
-  { id: 'idol-s', name: "Idole Sud", position: { x: 85, y: 85 }, teamId: 'blue' },
-];
+import type { Unit } from './types';
+
+// This type can be expanded with more objective-specific properties later
+export type Objective = {
+  id: string;
+  name: string;
+  position: { x: number; y: number };
+  teamId: 'blue' | 'red' | 'neutral';
+  type: 'tower' | 'idol' | 'spawn';
+  // Potentially add stats if they can be attacked
+  stats?: {
+      hp: number;
+      maxHp: number;
+  }
+};
+
+
+// This file is now deprecated for static objectives.
+// Objectives are loaded dynamically from the /public/map.json file
+// in src/server/game-state.ts
+export const objectives: Objective[] = [];

@@ -36,7 +36,7 @@ export type Unit = {
   // Identity
   id: string;
   name: string;
-  type: string; // e.g., 'Knight', 'Archer', 'Tower', 'Idol'
+  type: string; // e.g., 'Knight', 'Archer', 'tower', 'idol'
   heroId: string; // ID of the hero this unit is based on
   teamId: 'blue' | 'red';
   
@@ -99,4 +99,16 @@ export type Ping = {
   x: number;
   y: number;
   playerId: string;
+};
+
+export type Objective = {
+  id: string;
+  name: string;
+  position: { x: number; y: number };
+  teamId: 'blue' | 'red' | 'neutral';
+  type: 'tower' | 'idol' | 'spawn';
+  stats?: {
+      hp: number;
+      maxHp: number;
+  }
 };
