@@ -233,7 +233,7 @@ export default function GamePageContent() {
     const alliedObjectives = objectives.filter(obj => obj.teamId === playerTeamId);
     visionSources.push(...alliedObjectives.map(o => o.position));
 
-    const isVisible = (unitPos: {x: number, y: number}) => {
+    const isVisible = useCallback((unitPos: {x: number, y: number}) => {
         for (const source of visionSources) {
             const dx = unitPos.x - source.x;
             const dy = unitPos.y - source.y;
@@ -243,11 +243,20 @@ export default function GamePageContent() {
             }
         }
         return false;
-    };
+    }, [visionSources]);
 
-    const visibleEnemyUnits = units.filter(u => u.teamId !== playerTeamId && isVisible(u.position));
-    const alliedUnits = units.filter(u => u.teamId === playerTeamId);
-
+    const otherUnits = units.filter(unit => {
+        // Exclude player's own units
+        if (unit.control.controllerPlayerId === pseudo) {
+            return false;
+        }
+        // Always include allies
+        if (unit.teamId === playerTeamId) {
+            return true;
+        }
+        // Include enemies only if they are visible
+        return isVisible(unit.position);
+    });
 
     const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
@@ -258,7 +267,7 @@ export default function GamePageContent() {
             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
                     playerUnits={playerUnits}
-                    otherUnits={[...alliedUnits.filter(u => u.control.controllerPlayerId !== pseudo), ...visibleEnemyUnits]}
+                    otherUnits={otherUnits}
                     teams={teams}
                     pings={pings}
                     zoom={zoom}
@@ -306,3 +315,5 @@ export default function GamePageContent() {
         </main>
     );
 }
+
+    
