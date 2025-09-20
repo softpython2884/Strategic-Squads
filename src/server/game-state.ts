@@ -350,42 +350,46 @@ export const gameState = {
   },
   
   setPlayerMoveTarget: (unitIds: string[], position: { x: number, y: number }) => {
-     liveUnits = liveUnits.map(unit => {
-      if (unitIds.includes(unit.id)) {
-        if (unit.combat.status !== 'alive') return unit;
-        
-        // Convert world % to grid coordinates
+    const unitsToMove = liveUnits.filter(u => unitIds.includes(u.id) && u.combat.status === 'alive');
+    if (unitsToMove.length === 0) return;
+
+    // Calculate formation positions around the target position
+    const formationPositions = getFormationPositions(position, unitsToMove.length);
+
+    unitsToMove.forEach((unit, index) => {
+        const targetPos = formationPositions[index];
+
         const startX = Math.floor(unit.position.x / 100 * mapWidth);
         const startY = Math.floor(unit.position.y / 100 * mapHeight);
-        const endX = Math.floor(position.x / 100 * mapWidth);
-        const endY = Math.floor(position.y / 100 * mapHeight);
+        const endX = Math.floor(targetPos.x / 100 * mapWidth);
+        const endY = Math.floor(targetPos.y / 100 * mapHeight);
 
         const gridClone = grid.clone();
         const finder = new AStarFinder();
         
-        // Ensure start and end nodes are walkable for the finder
-        gridClone.setWalkableAt(startX, startY, true);
-        gridClone.setWalkableAt(endX, endY, true);
+        try {
+            gridClone.setWalkableAt(startX, startY, true);
+            gridClone.setWalkableAt(endX, endY, true);
 
-        const path = finder.findPath(startX, startY, endX, endY, gridClone);
+            const path = finder.findPath(startX, startY, endX, endY, gridClone);
 
-        if (path && path.length > 0) {
-             // Convert path back to world coordinates
-            const worldPath = path.map(p => [(p[0] / mapWidth * 100), (p[1] / mapHeight * 100)]);
-            return {
-                ...unit,
-                control: {
-                    ...unit.control,
-                    moveTarget: position, // Keep final destination
-                    focus: undefined,
-                    path: worldPath,
+            const unitIndex = liveUnits.findIndex(u => u.id === unit.id);
+            if (unitIndex !== -1) {
+                if (path && path.length > 0) {
+                    const worldPath = path.map(p => [ (p[0] / mapWidth * 100), (p[1] / mapHeight * 100) ]);
+                    liveUnits[unitIndex].control = {
+                        ...liveUnits[unitIndex].control,
+                        moveTarget: targetPos,
+                        focus: undefined,
+                        path: worldPath,
+                    };
+                } else {
+                    console.log(`No path found for unit ${unit.id}`);
                 }
             }
-        } else {
-            console.log(`No path found for unit ${unit.id} from (${startX},${startY}) to (${endX},${endY})`);
+        } catch (e) {
+            console.error(`Pathfinding error for unit ${unit.id}:`, e);
         }
-      }
-      return unit;
     });
   },
 
@@ -405,7 +409,7 @@ export const gameState = {
         }
         return unit;
     })
-    console.log(`Units ${unitIds.join(', ')} assigned focus to ${targetId || 'a position'}.`);
+    // console.log(`Units ${unitIds.join(', ')} assigned focus to ${targetId || 'a position'}.`);
   },
 
   grantXp: (unitId: string, amount: number) => {
@@ -641,4 +645,22 @@ export const gameState = {
   }
 };
 
-    
+function getFormationPositions(center: {x: number, y: number}, count: number): {x: number, y: number}[] {
+    if (count === 1) return [center];
+
+    const positions: {x: number, y: number}[] = [];
+    const separation = 5; // Separation distance in world percentage
+    const numPerRow = Math.ceil(Math.sqrt(count));
+    const startOffset = (numPerRow - 1) * separation / 2;
+
+    for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / numPerRow);
+        const col = i % numPerRow;
+        positions.push({
+            x: center.x - startOffset + col * separation,
+            y: center.y - startOffset + row * separation,
+        });
+    }
+
+    return positions;
+}

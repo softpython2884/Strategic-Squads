@@ -59,6 +59,7 @@ export default function GamePageContent() {
 
     const ws = useRef<WebSocket | null>(null);
     const panIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const lastPanDirection = useRef({ x: 0, y: 0 });
 
     useEffect(() => {
         if (ws.current) return;
@@ -133,40 +134,50 @@ export default function GamePageContent() {
     }, [isStrategicMapOpen, centerCameraOnSquad]);
 
     useEffect(() => {
+        const startPanning = (x: number, y: number) => {
+            if (panIntervalRef.current) return; // Already panning
+            lastPanDirection.current = { x, y };
+            panIntervalRef.current = setInterval(() => {
+                setCameraPosition(prev => ({
+                    x: Math.max(0, Math.min(mapDimensions.width, prev.x + lastPanDirection.current.x)),
+                    y: Math.max(0, Math.min(mapDimensions.height, prev.y + lastPanDirection.current.y))
+                }));
+            }, 16);
+        };
+
+        const stopPanning = () => {
+            if (panIntervalRef.current) {
+                clearInterval(panIntervalRef.current);
+                panIntervalRef.current = null;
+            }
+            lastPanDirection.current = { x: 0, y: 0 };
+        };
+
         const handleMouseMove = (e: MouseEvent) => {
-            const edgeSize = 30; 
-            const panSpeed = 15; 
+            const edgeSize = 30;
+            const panSpeed = 15;
             
             let panX = 0;
             let panY = 0;
 
             if (e.clientX < edgeSize) panX = -panSpeed;
-            if (e.clientX > window.innerWidth - edgeSize) panX = panSpeed;
-            if (e.clientY < edgeSize) panY = -panSpeed;
-            if (e.clientY > window.innerHeight - edgeSize) panY = panSpeed;
+            else if (e.clientX > window.innerWidth - edgeSize) panX = panSpeed;
 
+            if (e.clientY < edgeSize) panY = -panSpeed;
+            else if (e.clientY > window.innerHeight - edgeSize) panY = panSpeed;
+            
             if (panX !== 0 || panY !== 0) {
-                if (!panIntervalRef.current) {
-                    panIntervalRef.current = setInterval(() => {
-                        setCameraPosition(prev => ({
-                            x: Math.max(0, Math.min(mapDimensions.width, prev.x + panX)),
-                            y: Math.max(0, Math.min(mapDimensions.height, prev.y + panY))
-                        }));
-                    }, 16); 
+                 if (!panIntervalRef.current || panX !== lastPanDirection.current.x || panY !== lastPanDirection.current.y) {
+                    stopPanning();
+                    startPanning(panX, panY);
                 }
             } else {
-                if (panIntervalRef.current) {
-                    clearInterval(panIntervalRef.current);
-                    panIntervalRef.current = null;
-                }
+                stopPanning();
             }
         };
         
         const handleMouseLeave = () => {
-             if (panIntervalRef.current) {
-                clearInterval(panIntervalRef.current);
-                panIntervalRef.current = null;
-            }
+            stopPanning();
         };
 
         window.addEventListener('mousemove', handleMouseMove);
@@ -175,9 +186,7 @@ export default function GamePageContent() {
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             document.body.removeEventListener('mouseleave', handleMouseLeave);
-             if (panIntervalRef.current) {
-                clearInterval(panIntervalRef.current);
-            }
+            stopPanning();
         };
     }, [mapDimensions]);
 
@@ -290,16 +299,6 @@ export default function GamePageContent() {
         }
         return false;
     }, [visionSources]);
-
-    const otherUnits = units.filter(unit => {
-        if (unit.control.controllerPlayerId === pseudo) {
-            return false;
-        }
-        if (unit.teamId === playerTeamId) {
-            return true;
-        }
-        return isVisible(unit.position);
-    });
     
     const allPlayerTeamUnits = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
@@ -313,7 +312,7 @@ export default function GamePageContent() {
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
-                    units={[...playerUnits, ...otherUnits]}
+                    units={visibleUnits}
                     playerUnits={playerUnits}
                     teams={teams}
                     pings={pings}
