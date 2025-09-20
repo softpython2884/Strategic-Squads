@@ -73,6 +73,11 @@ let isGameStarted = false;
 let gameTime = GAME_DURATION_SECONDS; // Countdown timer
 let damageMultiplier = 1;
 
+// Function to calculate distance between two units
+const calculateDistance = (unitA: Unit, unitB: Unit): number => {
+    return Math.sqrt(Math.pow(unitA.position.x - unitB.position.x, 2) + Math.pow(unitA.position.y - unitB.position.y, 2));
+};
+
 export const gameState = {
   getUnits: () => liveUnits,
   getTeams: () => liveTeams,
@@ -161,6 +166,21 @@ export const gameState = {
     return updatedUnit;
   },
 
+  setPlayerAttackFocus: (playerId: string, targetId: string | null, position: {x: number, y: number}) => {
+    const playerUnits = liveUnits.filter(u => u.control.controllerPlayerId === playerId);
+    const targetUnit = targetId ? liveUnits.find(u => u.id === targetId) : null;
+
+    if (playerUnits.length === 0) return;
+
+    for (const unit of playerUnits) {
+        // Update the focus to the new target ID
+        unit.control.focus = targetId || undefined;
+        // The movement towards the target will be handled in the game loop
+    }
+
+    console.log(`Player ${playerId} assigned focus to ${targetId || 'a position'}.`);
+  },
+
   grantXp: (unitId: string, amount: number) => {
     liveUnits = liveUnits.map(unit => {
       if (unit.id === unitId) {
@@ -216,6 +236,46 @@ export const gameState = {
     });
   },
 
+  processUnitActions: () => {
+    if (!isGameStarted) return;
+    
+    // This is where auto-attacking and ability usage would go.
+    // For now, let's just handle movement towards focused targets.
+    liveUnits = liveUnits.map(unit => {
+      if (unit.control.focus) {
+        const target = liveUnits.find(u => u.id === unit.control.focus);
+        if (target) {
+            // This is a simplified movement logic. A real game would use pathfinding.
+            const distance = calculateDistance(unit, target);
+            const attackRange = 5; // Simplified attack range for all units
+
+            if (distance > attackRange) {
+                const speed = 1; // Simplified speed (units per tick)
+                const dx = target.position.x - unit.position.x;
+                const dy = target.position.y - unit.position.y;
+                const newX = unit.position.x + (dx / distance) * speed;
+                const newY = unit.position.y + (dy / distance) * speed;
+                
+                return {
+                    ...unit,
+                    position: {
+                        x: Math.max(0, Math.min(100, newX)),
+                        y: Math.max(0, Math.min(100, newY))
+                    }
+                }
+            } else {
+                // Unit is in range, logic to attack would go here.
+            }
+        } else {
+            // Target is gone, clear focus
+            return { ...unit, control: { ...unit.control, focus: undefined } };
+        }
+      }
+      return unit;
+    })
+
+  },
+
   processGameTick: () => {
     if (!isGameStarted) return;
 
@@ -249,3 +309,5 @@ export const gameState = {
     console.log('Game state has been reset.');
   }
 };
+
+    

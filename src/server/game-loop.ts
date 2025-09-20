@@ -8,7 +8,7 @@
 import { gameState } from '@/server/game-state';
 import { broadcastGameState } from './websocket-server';
 
-const TICK_RATE_MS = 1000; // Let's update once per second for the timer
+const TICK_RATE_MS = 250; // Update 4 times per second for smoother movement
 let gameLoopInterval: NodeJS.Timeout | null = null;
 let tickCount = 0;
 
@@ -16,19 +16,20 @@ async function gameTick() {
   tickCount++;
   // console.log(`Game Tick #${tickCount} at ${new Date().toISOString()}`);
 
-  // Process game time and associated logic (damage multipliers, etc.)
-  gameState.processGameTick();
-
-  // Process cooldowns for all units
-  gameState.processCooldowns();
+  if (tickCount % 4 === 0) { // Only process time-based logic once per second
+      // Process game time and associated logic (damage multipliers, etc.)
+      gameState.processGameTick();
+      // Process cooldowns for all units
+      gameState.processCooldowns();
+  }
   
+  // Process unit actions like movement and targeting every tick
+  gameState.processUnitActions();
+
   // Broadcast the latest state to all clients
   await broadcastGameState();
 
   // Future logic will go here:
-  // - Process player inputs/intents
-  // - Update unit positions and states
-  // - Run AI behaviors
   // - Check for win/loss conditions
 }
 
@@ -59,3 +60,5 @@ export async function stopGameLoop() {
     console.log('Game loop is not running.');
   }
 }
+
+    

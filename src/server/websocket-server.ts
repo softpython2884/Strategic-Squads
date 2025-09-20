@@ -48,10 +48,9 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             }
             break;
         case 'attack':
-            console.log(`[Game Server] Handling attack for player ${action.payload.playerId} on target ${action.payload.targetId || 'ground'}`);
-            // TODO: Implement attack logic on the server
-            // Find the player's units, determine targets, calculate damage, etc.
-            // For now, we can just acknowledge the command.
+            console.log(`[Game Server] Handling attack for player ${action.payload.playerId}`);
+            gameState.setPlayerAttackFocus(action.payload.playerId, action.payload.targetId, action.payload.position);
+            // The game loop will broadcast the state changes
             break;
         case 'useSkill':
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId}`);
@@ -208,3 +207,5 @@ export async function broadcastActionToServer(action: ServerAction) {
         console.error('[Server Action Client] Failed to connect or send action to WS:', err);
     });
 }
+
+    
