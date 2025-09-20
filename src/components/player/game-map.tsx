@@ -11,6 +11,7 @@ import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 import PingDisplay from './hud/ping-display';
 
+
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
   Mage: MageIcon,
@@ -27,8 +28,8 @@ const compositionIcons: { [key in UnitComposition]: React.ElementType } = {
 };
 
 type GameMapProps = {
+    units: Unit[];
     playerUnits: Unit[];
-    otherUnits: Unit[];
     teams: { [key: string]: Team };
     pings: Ping[];
     zoom: number;
@@ -44,7 +45,7 @@ type GameMapProps = {
     mapDimensions: { width: number, height: number };
 };
 
-const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean }) => {
+const UnitDisplay = React.memo(({ unit, isPlayerUnit, team, isTargeted, isSelected }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean }) => {
     const ClassIcon = classIcons[unit.type];
     const RoleIcon = compositionIcons[unit.composition];
     
@@ -100,12 +101,13 @@ const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { uni
             </div>
         </div>
     );
-}
+});
+UnitDisplay.displayName = 'UnitDisplay';
 
 
 export default function GameMap({ 
+    units,
     playerUnits, 
-    otherUnits, 
     teams, 
     pings, 
     zoom, 
@@ -120,7 +122,6 @@ export default function GameMap({
     onSelectUnits,
     mapDimensions
 }: GameMapProps) {
-    const allUnits = [...playerUnits, ...otherUnits];
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -142,7 +143,7 @@ export default function GameMap({
         const targetX = (worldX / mapDimensions.width) * 100;
         const targetY = (worldY / mapDimensions.height) * 100;
 
-        const clickedUnit = allUnits.find(unit => {
+        const clickedUnit = units.find(unit => {
             const unitScreenX = (unit.position.x / 100) * mapDimensions.width;
             const unitScreenY = (unit.position.y / 100) * mapDimensions.height;
             const distance = Math.sqrt(Math.pow(worldX - unitScreenX, 2) + Math.pow(worldY - unitScreenY, 2));
@@ -161,7 +162,6 @@ export default function GameMap({
                  setTimeout(() => setTargetedUnitId(null), 500);
             }
         } else {
-            // This is a single click, not a drag, so handle single unit selection.
             if (!isDragging) {
                 const clickedPlayerUnit = playerUnits.find(u => u.id === clickedUnit?.id);
                 onSelectUnit(clickedPlayerUnit?.id || null, event.shiftKey);
@@ -212,7 +212,6 @@ export default function GameMap({
         const endX = Math.max(dragStart.x, dragEnd.x);
         const endY = Math.max(dragStart.y, dragEnd.y);
 
-        // Don't register as a drag if the box is too small
         if (endX - startX < 10 && endY - startY < 10) {
             handleInteraction(e, false);
             return;
@@ -220,7 +219,6 @@ export default function GameMap({
         
         const selectedIds: string[] = [];
         playerUnits.forEach(unit => {
-            // Convert unit world position to screen position
             const unitScreenX = (unit.position.x / 100 * mapDimensions.width - (cameraPosition.x - mapRect.width / (2 * zoom))) * zoom;
             const unitScreenY = (unit.position.y / 100 * mapDimensions.height - (cameraPosition.y - mapRect.height / (2 * zoom))) * zoom;
 
@@ -273,22 +271,23 @@ export default function GameMap({
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
-                    {/* The map is now just a plain background. */}
-
                     <AnimatePresence>
-                        {allUnits.map((unit) => (
+                        {units.map((unit) => (
                             <motion.div
                                 key={unit.id}
-                                layout
+                                layoutId={unit.id}
                                 initial={{
                                     left: `${(unit.position.x / 100) * mapDimensions.width}px`,
                                     top: `${(unit.position.y / 100) * mapDimensions.height}px`,
+                                    opacity: 0,
                                 }}
                                 animate={{
                                     left: `calc(${(unit.position.x / 100) * mapDimensions.width}px)`,
                                     top: `calc(${(unit.position.y / 100) * mapDimensions.height}px)`,
+                                    opacity: 1,
                                 }}
-                                transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                                 className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                             >
                                 <UnitDisplay 
@@ -323,5 +322,3 @@ export default function GameMap({
         </TooltipProvider>
     );
 }
-
-    

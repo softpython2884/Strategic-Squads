@@ -45,68 +45,70 @@ export default function GamePageContent() {
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
 
-    // New static map dimensions from map-data
     const mapDimensions = { 
         width: MAP_WIDTH_IN_TILES * TILE_SIZE, 
         height: MAP_HEIGHT_IN_TILES * TILE_SIZE 
     };
     
-    // Camera state - center on map initially
     const [zoom, setZoom] = useState(1.0);
     const [cameraPosition, setCameraPosition] = useState({ x: mapDimensions.width / 2, y: mapDimensions.height / 2 });
 
     const ws = useRef<WebSocket | null>(null);
-    const panIntervalRef = useRef<number | null>(null);
+    const panIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        // Only establish WebSocket connection once
-        if (!ws.current) {
-            const wsUrl = `ws://${window.location.hostname}:8080`;
-            const webSocket = new WebSocket(wsUrl);
-            ws.current = webSocket;
+        if (ws.current) return;
 
-            ws.current.onopen = () => console.log('GamePage WebSocket connected');
+        const wsUrl = `ws://${window.location.hostname}:8080`;
+        const webSocket = new WebSocket(wsUrl);
+        ws.current = webSocket;
 
-            ws.current.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-                    if (message.type === 'full-state' || message.type === 'update-state') {
-                        setUnits(message.payload.units);
-                        setTeams(message.payload.teams);
-                        setGameTime(message.payload.gameTime);
-                    } else if (message.type === 'ping-broadcast') {
-                        const newPing = message.payload as Ping;
-                        setPings(prevPings => [...prevPings, newPing]);
-                        setTimeout(() => {
-                            setPings(prev => prev.filter(p => p.id !== newPing.id));
-                        }, PING_DURATION_MS);
-                    }
-                } catch (error) {
-                    console.error("Error parsing WebSocket message:", error);
+        webSocket.onopen = () => console.log('GamePage WebSocket connected');
+
+        webSocket.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                if (message.type === 'full-state' || message.type === 'update-state') {
+                    setUnits(message.payload.units);
+                    setTeams(message.payload.teams);
+                    setGameTime(message.payload.gameTime);
+                } else if (message.type === 'ping-broadcast') {
+                    const newPing = message.payload as Ping;
+                    setPings(prevPings => [...prevPings, newPing]);
+                    setTimeout(() => {
+                        setPings(prev => prev.filter(p => p.id !== newPing.id));
+                    }, PING_DURATION_MS);
                 }
-            };
-
-            ws.current.onclose = () => console.log('GamePage WebSocket disconnected');
-            ws.current.onerror = (error) => console.error('GamePage WebSocket error:', error);
-        }
-
-        // Cleanup on component unmount
-        return () => {
-            if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
-              ws.current.close();
-              ws.current = null;
+            } catch (error) {
+                console.error("Error parsing WebSocket message:", error);
             }
         };
-    }, []); // Empty dependency array ensures this runs only once
+
+        webSocket.onclose = () => console.log('GamePage WebSocket disconnected');
+        webSocket.onerror = (error) => console.error('GamePage WebSocket error:', error);
+
+        return () => {
+            if (webSocket.readyState === WebSocket.OPEN || webSocket.readyState === WebSocket.CONNECTING) {
+              webSocket.close();
+            }
+            ws.current = null;
+        };
+    }, []); 
+
+    const centerCameraOnPosition = useCallback((pos: {x: number, y: number}) => {
+        const worldX = (pos.x / 100) * mapDimensions.width;
+        const worldY = (pos.y / 100) * mapDimensions.height;
+        setCameraPosition({ x: worldX, y: worldY });
+    }, [mapDimensions]);
 
     const centerCameraOnSquad = useCallback(() => {
         const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
         if (playerUnits.length > 0) {
-            const avgX = playerUnits.reduce((sum, u) => sum + (u.position.x / 100 * mapDimensions.width), 0) / playerUnits.length;
-            const avgY = playerUnits.reduce((sum, u) => sum + (u.position.y / 100 * mapDimensions.height), 0) / playerUnits.length;
-            setCameraPosition({ x: avgX, y: avgY });
+            const avgX = playerUnits.reduce((sum, u) => sum + u.position.x, 0) / playerUnits.length;
+            const avgY = playerUnits.reduce((sum, u) => sum + u.position.y, 0) / playerUnits.length;
+            centerCameraOnPosition({ x: avgX, y: avgY });
         }
-    }, [units, pseudo, mapDimensions]);
+    }, [units, pseudo, centerCameraOnPosition]);
     
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -141,7 +143,7 @@ export default function GamePageContent() {
 
             if (panX !== 0 || panY !== 0) {
                 if (!panIntervalRef.current) {
-                    panIntervalRef.current = window.setInterval(() => {
+                    panIntervalRef.current = setInterval(() => {
                         setCameraPosition(prev => ({
                             x: Math.max(0, Math.min(mapDimensions.width, prev.x + panX)),
                             y: Math.max(0, Math.min(mapDimensions.height, prev.y + panY))
@@ -175,68 +177,52 @@ export default function GamePageContent() {
         };
     }, [mapDimensions]);
 
+    const sendWsMessage = useCallback((type: string, payload: any) => {
+        if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
+        ws.current.send(JSON.stringify({ type, payload }));
+    }, []);
+
     const handlePing = useCallback((coords: { x: number, y: number }) => {
-        if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
-        
-        const pingPayload = {
+        if (!pseudo) return;
+        sendWsMessage('ping', {
             id: `${pseudo}-${Date.now()}`,
             x: coords.x,
             y: coords.y,
             playerId: pseudo,
-        };
-
-        ws.current.send(JSON.stringify({
-            type: 'ping',
-            payload: pingPayload
-        }));
-
-    }, [pseudo]);
+        });
+    }, [pseudo, sendWsMessage]);
 
     const handleMove = useCallback((coords: { x: number, y: number }) => {
-        if (!pseudo || selectedUnitIds.size === 0 || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
-        
-        ws.current.send(JSON.stringify({
-            type: 'move',
-            payload: {
-                playerId: pseudo,
-                unitIds: Array.from(selectedUnitIds),
-                position: coords,
-            }
-        }));
-    }, [pseudo, selectedUnitIds]);
+        if (!pseudo || selectedUnitIds.size === 0) return;
+        sendWsMessage('move', {
+            playerId: pseudo,
+            unitIds: Array.from(selectedUnitIds),
+            position: coords,
+        });
+    }, [pseudo, selectedUnitIds, sendWsMessage]);
 
     const handleAttack = useCallback((target: Unit | null, coords: { x: number, y: number }) => {
-        if (!pseudo || selectedUnitIds.size === 0 || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
-        
-        ws.current.send(JSON.stringify({
-            type: 'attack',
-            payload: {
-                playerId: pseudo,
-                unitIds: Array.from(selectedUnitIds),
-                targetId: target?.id || null,
-                position: coords
-            }
-        }));
-
-    }, [pseudo, selectedUnitIds]);
+        if (!pseudo || selectedUnitIds.size === 0) return;
+        sendWsMessage('attack', {
+            playerId: pseudo,
+            unitIds: Array.from(selectedUnitIds),
+            targetId: target?.id || null,
+            position: coords
+        });
+    }, [pseudo, selectedUnitIds, sendWsMessage]);
     
     const handleUseSkill = useCallback((unitId: string, skillId: string) => {
-        if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
-
+        if (!pseudo) return;
         const caster = units.find(u => u.id === unitId);
         if (!caster) return;
 
-        console.log(`Client sending useSkill for unit ${unitId}, skill ${skillId}`);
-        ws.current.send(JSON.stringify({
-            type: 'useSkill',
-            payload: {
-                playerId: pseudo,
-                unitId,
-                skillId,
-                targetId: caster.control.focus, // Send current target
-            }
-        }));
-    }, [pseudo, units]);
+        sendWsMessage('useSkill', {
+            playerId: pseudo,
+            unitId,
+            skillId,
+            targetId: caster.control.focus,
+        });
+    }, [pseudo, units, sendWsMessage]);
 
     const handleSelectUnit = useCallback((unitId: string | null, isShiftHeld: boolean) => {
         setSelectedUnitIds(prev => {
@@ -263,7 +249,6 @@ export default function GamePageContent() {
     const handleSelectUnits = useCallback((unitIds: string[], isShiftHeld: boolean) => {
         setSelectedUnitIds(prev => {
             const newSelection = new Set(prev);
-            
             if (isShiftHeld) {
                 unitIds.forEach(id => newSelection.add(id));
             } else {
@@ -273,6 +258,14 @@ export default function GamePageContent() {
             return newSelection;
         });
     }, []);
+
+    const handleSelectAndCenter = useCallback((unitId: string) => {
+        handleSelectUnit(unitId, false);
+        const unit = units.find(u => u.id === unitId);
+        if (unit) {
+            centerCameraOnPosition(unit.position);
+        }
+    }, [units, handleSelectUnit, centerCameraOnPosition]);
 
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const playerTeamId = playerUnits[0]?.teamId;
@@ -307,7 +300,6 @@ export default function GamePageContent() {
     const allPlayerTeamUnits = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
 
-    // Corrected visible units for minimap
     const visibleUnits = [...allPlayerTeamUnits, ...units.filter(u => u.teamId !== playerTeamId && isVisible(u.position))];
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
@@ -317,8 +309,8 @@ export default function GamePageContent() {
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
             <Suspense fallback={<GameMapLoading />}>
                 <GameMap 
+                    units={[...playerUnits, ...otherUnits]}
                     playerUnits={playerUnits}
-                    otherUnits={otherUnits}
                     teams={teams}
                     pings={pings}
                     zoom={zoom}
@@ -344,7 +336,11 @@ export default function GamePageContent() {
                     cameraPosition={cameraPosition}
                 />
                 <GameTimer remainingTime={gameTime} />
-                <TeamPanel teamUnits={allPlayerTeamUnits} currentPlayerId={pseudo} />
+                <TeamPanel 
+                    teamUnits={allPlayerTeamUnits} 
+                    currentPlayerId={pseudo} 
+                    onUnitSelect={handleSelectAndCenter} 
+                />
                 <ObjectivesPanel squadComposition={playerUnits[0]?.composition} />
                 <MiniMap 
                     units={visibleUnits}

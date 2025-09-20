@@ -3,22 +3,31 @@
 'use client';
 
 import React from 'react';
-import type { Unit, Team } from '@/lib/types';
+import type { Unit } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-const UnitPortrait = ({ unit, isPlayerUnit }: { unit: Unit, isPlayerUnit: boolean }) => {
+type UnitPortraitProps = {
+    unit: Unit;
+    isPlayerUnit: boolean;
+    onClick: () => void;
+};
+
+const UnitPortrait = ({ unit, isPlayerUnit, onClick }: UnitPortraitProps) => {
     
     const healthPercentage = (unit.stats.hp / unit.stats.maxHp) * 100;
     const resourcePercentage = (unit.stats.resource / unit.stats.maxResource) * 100;
     const xpPercentage = (unit.progression.xp / unit.progression.xpToNextLevel) * 100;
 
     return (
-        <div className={cn(
-            "relative flex items-center gap-3 p-2 rounded-lg bg-black/60 border border-white/10 pointer-events-auto cursor-pointer hover:bg-white/10",
-            isPlayerUnit && "border-primary"
-        )}>
+        <div 
+            className={cn(
+                "relative flex items-center gap-3 p-2 rounded-lg bg-black/60 border border-white/10 pointer-events-auto cursor-pointer hover:bg-white/10",
+                isPlayerUnit && "border-primary"
+            )}
+            onClick={onClick}
+        >
             <div className="relative">
                 <Avatar className="w-12 h-12 border-2 border-background">
                     <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.heroId}`} />
@@ -45,7 +54,14 @@ const UnitPortrait = ({ unit, isPlayerUnit }: { unit: Unit, isPlayerUnit: boolea
     );
 };
 
-const TeamPanel = ({ teamUnits, currentPlayerId }: { teamUnits: Unit[], currentPlayerId: string | null }) => {
+type TeamPanelProps = {
+    teamUnits: Unit[];
+    currentPlayerId: string | null;
+    onUnitSelect: (unitId: string) => void;
+};
+
+
+const TeamPanel = ({ teamUnits, currentPlayerId, onUnitSelect }: TeamPanelProps) => {
     
     // Filter out non-player units like towers
     const playerControlledUnits = teamUnits.filter(u => u.control.controllerPlayerId);
@@ -61,15 +77,14 @@ const TeamPanel = ({ teamUnits, currentPlayerId }: { teamUnits: Unit[], currentP
     return (
         <div className="absolute top-4 right-4 flex flex-col gap-2 w-52 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {myUnits.map(unit => (
-                <UnitPortrait key={unit.id} unit={unit} isPlayerUnit={true} />
+                <UnitPortrait key={unit.id} unit={unit} isPlayerUnit={true} onClick={() => onUnitSelect(unit.id)} />
             ))}
             {myUnits.length > 0 && teammateUnits.length > 0 && <hr className="border-white/20 my-1" />}
             {teammateUnits.map(unit => (
-                <UnitPortrait key={unit.id} unit={unit} isPlayerUnit={false} />
+                <UnitPortrait key={unit.id} unit={unit} isPlayerUnit={false} onClick={() => onUnitSelect(unit.id)} />
             ))}
         </div>
     );
 };
 
 export default TeamPanel;
-
