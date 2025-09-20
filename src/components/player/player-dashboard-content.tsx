@@ -1,16 +1,18 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Hourglass, Loader2, UserPlus, XSquare } from 'lucide-react';
+import { Hourglass, Loader2, UserPlus, XSquare, Dices } from 'lucide-react';
 import { UnitSelectionModal } from '@/components/player/unit-selection-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { type SquadUnit, type JoinGameInput } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Hero } from '@/lib/types';
+import { HEROES_DATA } from '@/lib/heroes';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 
 const classIcons: { [key: string]: React.ElementType } = {
@@ -92,6 +94,31 @@ export default function PlayerDashboardContent() {
     newSquad[slotIndex] = null;
     setSquad(newSquad);
   };
+
+  const handleRandomizeSquad = () => {
+    if (!squadType) return;
+
+    const availableHeroes = HEROES_DATA.filter(h => h.composition === squadType);
+    
+    // Shuffle the array
+    const shuffledHeroes = availableHeroes.sort(() => 0.5 - Math.random());
+    
+    const newSquad: (SquadUnit | null)[] = [];
+    for (let i = 0; i < 4; i++) {
+        if (shuffledHeroes[i]) {
+            const hero = shuffledHeroes[i];
+            newSquad.push({
+                id: hero.id,
+                name: hero.name,
+                type: hero.class,
+            });
+        } else {
+            newSquad.push(null);
+        }
+    }
+    setSquad(newSquad);
+  };
+
 
   if (!pseudo || !teamId || !squadType) {
     return (
@@ -211,10 +238,14 @@ export default function PlayerDashboardContent() {
               </Card>
             ))}
           </div>
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-8 gap-4">
+             <Button variant="outline" size="lg" onClick={handleRandomizeSquad}>
+                <Dices className="mr-2"/>
+                J'ai de la chance
+            </Button>
             <Button size="lg" disabled={!isSquadFull || isLoading} onClick={handleConfirmSquad}>
               {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Hourglass className="mr-2" />}
-              Prêt pour le combat (Salle d'attente)
+              Prêt pour le combat
             </Button>
           </div>
         </CardContent>

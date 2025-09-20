@@ -124,13 +124,16 @@ export default function GameMap({
 }: GameMapProps) {
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
+    const [isBoxSelecting, setIsBoxSelecting] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [dragEnd, setDragEnd] = useState({ x: 0, y: 0 });
     const isInteractingRef = useRef(false);
 
+    const [isPanning, setIsPanning] = useState(false);
+    const lastMousePosition = useRef({ x: 0, y: 0 });
+
     const handleInteraction = useCallback((event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
-        if (isDragging || isInteractingRef.current) return;
+        if (isBoxSelecting || isInteractingRef.current || isPanning) return;
         isInteractingRef.current = true;
 
         const mapRect = mapContainerRef.current?.getBoundingClientRect();
@@ -170,7 +173,7 @@ export default function GameMap({
         
         setTimeout(() => { isInteractingRef.current = false; }, 100);
 
-    }, [isDragging, zoom, cameraPosition, mapDimensions, units, onPing, onAttack, onMove, playerUnits]);
+    }, [isBoxSelecting, zoom, cameraPosition, mapDimensions, units, onPing, onAttack, onMove, playerUnits, isPanning]);
 
     // Manual event listener for wheel to set passive: false
     useEffect(() => {
@@ -192,7 +195,16 @@ export default function GameMap({
     
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.button !== 0) return; // Only handle left-clicks for dragging
+        // Middle mouse button for panning
+        if (e.button === 1) {
+            e.preventDefault();
+            setIsPanning(true);
+            lastMousePosition.current = { x: e.clientX, y: e.clientY };
+            return;
+        }
+
+        // Left mouse button for selection
+        if (e.button !== 0) return; 
         
         isInteractingRef.current = true;
         const mapRect = mapContainerRef.current?.getBoundingClientRect();
@@ -201,14 +213,22 @@ export default function GameMap({
         const startPos = { x: e.clientX - mapRect.left, y: e.clientY - mapRect.top };
         setDragStart(startPos);
         setDragEnd(startPos);
-        // Delay setting isDragging to differentiate from a click
+        
         setTimeout(() => {
-            if (isInteractingRef.current) setIsDragging(true);
+            if (isInteractingRef.current) setIsBoxSelecting(true);
         }, 150);
     };
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isInteractingRef.current || !isDragging) return;
+        if (isPanning) {
+            const dx = e.clientX - lastMousePosition.current.x;
+            const dy = e.clientY - lastMousePosition.current.y;
+            onCameraPan({ x: -dx / zoom, y: -dy / zoom });
+            lastMousePosition.current = { x: e.clientX, y: e.clientY };
+            return;
+        }
+        
+        if (!isInteractingRef.current || !isBoxSelecting) return;
 
         const mapRect = mapContainerRef.current?.getBoundingClientRect();
         if (!mapRect) return;
@@ -216,10 +236,14 @@ export default function GameMap({
     };
 
     const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isPanning && e.button === 1) {
+            setIsPanning(false);
+            return;
+        }
+        
         if (e.button !== 0) return;
 
-        if (isDragging) {
-             // This was a drag, handle box selection
+        if (isBoxSelecting) {
             const mapRect = mapContainerRef.current?.getBoundingClientRect();
             if (!mapRect) return;
             
@@ -228,30 +252,32 @@ export default function GameMap({
             const endX = Math.max(dragStart.x, dragEnd.x);
             const endY = Math.max(dragStart.y, dragEnd.y);
             
-            const selectedIds: string[] = [];
-            playerUnits.forEach(unit => {
-                const unitWorldX = (unit.position.x / 100) * mapDimensions.width;
-                const unitWorldY = (unit.position.y / 100) * mapDimensions.height;
-                
-                const unitScreenX = (unitWorldX - cameraPosition.x) * zoom + (mapRect.width / 2);
-                const unitScreenY = (unitWorldY - cameraPosition.y) * zoom + (mapRect.height / 2);
+            // If the box is too small, treat it as a click
+            if (Math.abs(dragStart.x - dragEnd.x) < 10 && Math.abs(dragStart.y - dragEnd.y) < 10) {
+                 handleInteraction(e, false);
+            } else {
+                const selectedIds: string[] = [];
+                playerUnits.forEach(unit => {
+                    const unitWorldX = (unit.position.x / 100) * mapDimensions.width;
+                    const unitWorldY = (unit.position.y / 100) * mapDimensions.height;
+                    
+                    const unitScreenX = (unitWorldX - cameraPosition.x) * zoom + (mapRect.width / 2);
+                    const unitScreenY = (unitWorldY - cameraPosition.y) * zoom + (mapRect.height / 2);
 
-                if (unitScreenX >= startX && unitScreenX <= endX && unitScreenY >= startY && unitScreenY <= endY) {
-                    selectedIds.push(unit.id);
-                }
-            });
-            onSelectUnits(selectedIds, e.shiftKey);
-        } else {
-            // This was a simple click
-            handleInteraction(e, false);
+                    if (unitScreenX >= startX && unitScreenX <= endX && unitScreenY >= startY && unitScreenY <= endY) {
+                        selectedIds.push(unit.id);
+                    }
+                });
+                onSelectUnits(selectedIds, e.shiftKey);
+            }
         }
         
         isInteractingRef.current = false;
-        setIsDragging(false);
+        setIsBoxSelecting(false);
     };
 
     const SelectionBox = () => {
-        if (!isDragging) return null;
+        if (!isBoxSelecting) return null;
         const x = Math.min(dragStart.x, dragEnd.x);
         const y = Math.min(dragStart.y, dragEnd.y);
         const width = Math.abs(dragStart.x - dragEnd.x);
@@ -272,14 +298,18 @@ export default function GameMap({
         <TooltipProvider>
             <div
                 ref={mapContainerRef}
-                className="relative w-full h-full overflow-hidden select-none bg-gray-800 cursor-crosshair"
+                className={cn(
+                    "relative w-full h-full overflow-hidden select-none bg-gray-800",
+                    isPanning ? "cursor-grabbing" : "cursor-crosshair"
+                )}
                 onContextMenu={(e) => handleInteraction(e, true)}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={() => {
                     isInteractingRef.current = false;
-                    setIsDragging(false);
+                    setIsBoxSelecting(false);
+                    setIsPanning(false);
                 }}
             >
                 <motion.div

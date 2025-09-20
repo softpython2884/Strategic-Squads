@@ -133,15 +133,20 @@ export default function GamePageContent() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isStrategicMapOpen, centerCameraOnSquad]);
 
+    const handleCameraPan = useCallback((pan: { x: number, y: number }) => {
+        setCameraPosition(prev => ({
+            x: Math.max(0, Math.min(mapDimensions.width, prev.x + pan.x)),
+            y: Math.max(0, Math.min(mapDimensions.height, prev.y + pan.y))
+        }));
+    }, [mapDimensions]);
+
+
     useEffect(() => {
         const startPanning = (x: number, y: number) => {
-            if (panIntervalRef.current) return; // Already panning
+            if (panIntervalRef.current) clearInterval(panIntervalRef.current);
             lastPanDirection.current = { x, y };
             panIntervalRef.current = setInterval(() => {
-                setCameraPosition(prev => ({
-                    x: Math.max(0, Math.min(mapDimensions.width, prev.x + lastPanDirection.current.x)),
-                    y: Math.max(0, Math.min(mapDimensions.height, prev.y + lastPanDirection.current.y))
-                }));
+                handleCameraPan({ x: lastPanDirection.current.x, y: lastPanDirection.current.y });
             }, 16);
         };
 
@@ -168,7 +173,6 @@ export default function GamePageContent() {
             
             if (panX !== 0 || panY !== 0) {
                  if (!panIntervalRef.current || panX !== lastPanDirection.current.x || panY !== lastPanDirection.current.y) {
-                    stopPanning();
                     startPanning(panX, panY);
                 }
             } else {
@@ -188,7 +192,7 @@ export default function GamePageContent() {
             document.body.removeEventListener('mouseleave', handleMouseLeave);
             stopPanning();
         };
-    }, [mapDimensions]);
+    }, [handleCameraPan]);
 
     const sendWsMessage = useCallback((type: string, payload: any) => {
         if (!ws.current || ws.current.readyState !== WebSocket.OPEN) return;
@@ -320,7 +324,7 @@ export default function GamePageContent() {
                     cameraPosition={cameraPosition}
                     selectedUnitIds={selectedUnitIds}
                     onZoomChange={setZoom}
-                    onCameraPan={setCameraPosition}
+                    onCameraPan={handleCameraPan}
                     onPing={handlePing}
                     onMove={handleMove}
                     onAttack={handleAttack}
