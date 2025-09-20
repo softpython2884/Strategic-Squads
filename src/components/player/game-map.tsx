@@ -11,7 +11,6 @@ import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
 import Image from 'next/image';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 import PingDisplay from './hud/ping-display';
-import TiledMapRenderer from './tiled-map-renderer';
 
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
@@ -254,7 +253,7 @@ export default function GameMap({
         <TooltipProvider>
             <div
                 ref={mapContainerRef}
-                className="relative w-full h-full overflow-hidden select-none bg-muted cursor-crosshair"
+                className="relative w-full h-full overflow-hidden select-none bg-gray-800 cursor-crosshair"
                 onContextMenu={(e) => e.preventDefault()}
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
@@ -275,7 +274,7 @@ export default function GameMap({
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
-                    <TiledMapRenderer />
+                    <div className="absolute inset-0 w-full h-full bg-gray-900" />
 
                     <AnimatePresence>
                         {allUnits.map((unit) => (

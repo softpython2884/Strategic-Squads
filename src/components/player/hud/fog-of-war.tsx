@@ -3,7 +3,6 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
 
 type FogOfWarProps = {
   visionSources: { x: number; y: number }[]; // Positions in percentages
@@ -19,66 +18,56 @@ const FogOfWar = ({ visionSources, visionRadius, mapDimensions, zoom, cameraPosi
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // Set canvas size to match the map world size
-    canvas.width = mapDimensions.width;
-    canvas.height = mapDimensions.height;
+    
+    const { clientWidth, clientHeight } = container;
+    canvas.width = clientWidth;
+    canvas.height = clientHeight;
 
     // 1. Fill the entire canvas with solid black (the fog)
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // 2. "Cut out" the visible areas
     ctx.globalCompositeOperation = 'destination-out';
 
-    const radiusInPixels = (visionRadius / 100) * mapDimensions.width;
+    const radiusInPixels = (visionRadius / 100) * mapDimensions.width * zoom;
 
     visionSources.forEach(source => {
-      const x = (source.x / 100) * canvas.width;
-      const y = (source.y / 100) * canvas.height;
+      // Convert world position (percentage) to screen position (pixels)
+      const worldX = (source.x / 100) * mapDimensions.width;
+      const worldY = (source.y / 100) * mapDimensions.height;
+
+      const screenX = (worldX - cameraPosition.x) * zoom + clientWidth / 2;
+      const screenY = (worldY - cameraPosition.y) * zoom + clientHeight / 2;
       
       // Create a radial gradient for a soft edge
-      const gradient = ctx.createRadialGradient(x, y, radiusInPixels * 0.7, x, y, radiusInPixels);
+      const gradient = ctx.createRadialGradient(screenX, screenY, radiusInPixels * 0.7, screenX, screenY, radiusInPixels);
       gradient.addColorStop(0, 'rgba(0,0,0,1)');
       gradient.addColorStop(1, 'rgba(0,0,0,0)');
 
       ctx.fillStyle = gradient;
       ctx.beginPath();
-      ctx.arc(x, y, radiusInPixels, 0, 2 * Math.PI);
+      ctx.arc(screenX, screenY, radiusInPixels, 0, 2 * Math.PI);
       ctx.fill();
     });
 
     // Reset composite operation for next render
     ctx.globalCompositeOperation = 'source-over';
 
-  }, [visionSources, visionRadius, mapDimensions]);
+  }, [visionSources, visionRadius, mapDimensions, zoom, cameraPosition]);
 
   return (
-    <motion.div
+    <div
       ref={containerRef}
       className="absolute inset-0 pointer-events-none"
-      style={{
-        width: mapDimensions.width,
-        height: mapDimensions.height,
-        originX: 0,
-        originY: 0,
-      }}
-      animate={{
-        scale: zoom,
-        x: -cameraPosition.x * zoom + (containerRef.current?.parentElement?.clientWidth ?? 0) / 2,
-        y: -cameraPosition.y * zoom + (containerRef.current?.parentElement?.clientHeight ?? 0) / 2,
-      }}
-      transition={{ duration: 0.2, ease: "linear" }}
     >
-        <canvas
-            ref={canvasRef}
-            className="absolute inset-0 w-full h-full opacity-80"
-        />
-    </motion.div>
+      <canvas ref={canvasRef} className="w-full h-full" />
+    </div>
   );
 };
 
