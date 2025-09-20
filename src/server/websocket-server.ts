@@ -9,11 +9,19 @@ const WS_PORT = 8080;
 let wss: WebSocketServer | null = null;
 const clients = new Set<WebSocket>();
 
+type PingPayload = {
+    id: string;
+    x: number;
+    y: number;
+    playerId: string;
+}
+
 type ServerAction = 
     | { type: 'joinGame', payload: JoinGameInput }
     | { type: 'moveUnit', payload: { playerId: string, unitId: string, position: { x: number, y: number } } }
     | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
-    | { type: 'startGame' };
+    | { type: 'startGame' }
+    | { type: 'ping', payload: PingPayload };
 
 
 // This function now handles actions sent directly from clients via WebSocket
@@ -40,9 +48,12 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             break;
         case 'useSkill':
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId}`);
+            // Note: This logic is simplified. A real implementation would have more checks.
             const skillUnit = gameState.getUnits().find(u => u.id === action.payload.unitId);
             const hero = gameState.getUnits().find(h => h.heroId === skillUnit?.heroId);
-            const skill = hero?.skills.find(s => s.id.toString() === action.payload.skillId);
+            // This is a placeholder, a real implementation needs to get skill data properly
+            // const skill = hero?.skills.find(s => s.id.toString() === action.payload.skillId);
+            const skill = { cooldown: 5 }; // Placeholder
 
             if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId && skill) {
                 gameState.useSkill(action.payload.unitId, action.payload.skillId, skill.cooldown);
@@ -55,6 +66,11 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
                 gameState.startGame();
                 await broadcastGameStart();
             }
+            break;
+        case 'ping':
+            console.log(`[Game Server] Handling ping from ${action.payload.playerId}`);
+            // Pings are ephemeral, just broadcast them to everyone
+            await broadcastPing(action.payload);
             break;
     }
 }
@@ -94,7 +110,7 @@ export async function startWebSocketServer() {
     ws.on('message', (message) => {
       try {
         const action = JSON.parse(message.toString()) as ServerAction;
-        console.log(`[Game Server] Received action from client: ${action.type}`);
+        // console.log(`[Game Server] Received action from client: ${action.type}`);
         handleClientAction(action, ws);
       } catch (error) {
         console.error("Failed to parse message from client:", error);
@@ -146,6 +162,17 @@ async function broadcastGameStart() {
 
     const message = JSON.stringify({ type: 'game-started' });
     console.log('Broadcasting game-started to all clients.');
+    clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+        }
+    });
+}
+
+async function broadcastPing(payload: PingPayload) {
+    if (!wss || clients.size === 0) return;
+
+    const message = JSON.stringify({ type: 'ping-broadcast', payload });
     clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
             client.send(message);

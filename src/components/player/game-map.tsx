@@ -6,12 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Unit, Team, UnitComposition } from '@/lib/types';
+import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
 import { moveUnit } from '@/app/actions';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
-import { Progress } from '@/components/ui/progress';
+import PingDisplay from './hud/ping-display';
 
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
@@ -32,6 +32,8 @@ type GameMapProps = {
     playerUnits: Unit[];
     otherUnits: Unit[];
     teams: { [key: string]: Team };
+    pings: Ping[];
+    onPing: (coords: { x: number, y: number }) => void;
 };
 
 const UnitDisplay = ({ unit, isPlayerUnit, team }: { unit: Unit; isPlayerUnit: boolean, team: Team }) => {
@@ -87,13 +89,13 @@ const UnitDisplay = ({ unit, isPlayerUnit, team }: { unit: Unit; isPlayerUnit: b
 }
 
 
-export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps) {
+export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing }: GameMapProps) {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
     const allUnits = [...playerUnits, ...otherUnits];
 
     const handleMapClick = async (event: React.MouseEvent<HTMLDivElement>) => {
-        if (!pseudo || playerUnits.length === 0) return;
+        if (!pseudo) return;
 
         const mapRect = event.currentTarget.getBoundingClientRect();
         const clickX = event.clientX - mapRect.left;
@@ -102,11 +104,15 @@ export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps
         const targetX = (clickX / mapRect.width) * 100;
         const targetY = (clickY / mapRect.height) * 100;
 
-        console.log(`Map clicked at: (${targetX.toFixed(2)}%, ${targetY.toFixed(2)}%)`);
+        if (event.altKey) {
+            onPing({ x: targetX, y: targetY });
+            return;
+        }
 
-        // For now, move all player units to the clicked location.
-        // Later, this will depend on which units are selected.
+        if (playerUnits.length === 0) return;
+        
         try {
+            // Move all player units to the clicked location.
             const movePromises = playerUnits.map(unit => 
                 moveUnit(pseudo, unit.id, { x: targetX, y: targetY })
             );
@@ -155,6 +161,12 @@ export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps
                                 team={teams[unit.teamId]}
                             />
                         </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {pings.map((ping) => (
+                        <PingDisplay key={ping.id} x={ping.x} y={ping.y} />
                     ))}
                 </AnimatePresence>
             </div>

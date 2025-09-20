@@ -1,10 +1,10 @@
 
 'use client'
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import type { Unit, Team } from '@/lib/types';
+import type { Unit, Team, Ping } from '@/lib/types';
 import GameMap from "@/components/player/game-map";
 import TeamPanel from './hud/team-panel';
 import SkillBar from './hud/skill-bar';
@@ -23,6 +23,8 @@ function GameMapLoading() {
     );
 }
 
+const PING_DURATION_MS = 5000;
+
 export default function GamePageContent() {
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
@@ -30,40 +32,69 @@ export default function GamePageContent() {
     const [units, setUnits] = useState<Unit[]>([]);
     const [teams, setTeams] = useState<{ [key: string]: Team }>({});
     const [gameTime, setGameTime] = useState(0);
+    const [pings, setPings] = useState<Ping[]>([]);
+    
+    const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
         const wsUrl = `ws://${window.location.hostname}:8080`;
-        const ws = new WebSocket(wsUrl);
+        const webSocket = new WebSocket(wsUrl);
+        ws.current = webSocket;
 
-        ws.onopen = () => console.log('GamePage WebSocket connected');
+        ws.current.onopen = () => console.log('GamePage WebSocket connected');
 
-        ws.onmessage = (event) => {
+        ws.current.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
                 if (message.type === 'full-state' || message.type === 'update-state') {
                     setUnits(message.payload.units);
                     setTeams(message.payload.teams);
                     setGameTime(message.payload.gameTime);
+                } else if (message.type === 'ping-broadcast') {
+                    const newPing = message.payload as Ping;
+                    setPings(prevPings => [...prevPings, newPing]);
+                    // Remove the ping after a delay
+                    setTimeout(() => {
+                        setPings(prev => prev.filter(p => p.id !== newPing.id));
+                    }, PING_DURATION_MS);
                 }
             } catch (error) {
                 console.error("Error parsing WebSocket message:", error);
             }
         };
 
-        ws.onclose = () => console.log('GamePage WebSocket disconnected');
-        ws.onerror = (error) => console.error('GamePage WebSocket error:', error);
+        ws.current.onclose = () => console.log('GamePage WebSocket disconnected');
+        ws.current.onerror = (error) => console.error('GamePage WebSocket error:', error);
 
         return () => {
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-              ws.close();
+            if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
+              ws.current.close();
             }
         };
     }, []);
+
+    const handlePing = useCallback((coords: { x: number, y: number }) => {
+        if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
+        
+        const pingPayload = {
+            id: `${pseudo}-${Date.now()}`,
+            x: coords.x,
+            y: coords.y,
+            playerId: pseudo,
+        };
+
+        ws.current.send(JSON.stringify({
+            type: 'ping',
+            payload: pingPayload
+        }));
+
+    }, [pseudo]);
     
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const otherUnits = pseudo ? units.filter(u => u.control.controllerPlayerId !== pseudo) : units;
     const playerTeamId = playerUnits[0]?.teamId;
     const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
+    const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
 
     return (
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
@@ -72,6 +103,8 @@ export default function GamePageContent() {
                     playerUnits={playerUnits}
                     otherUnits={otherUnits}
                     teams={teams}
+                    pings={pings}
+                    onPing={handlePing}
                 />
             </Suspense>
             
@@ -84,6 +117,9 @@ export default function GamePageContent() {
                     units={units} 
                     teams={teams} 
                     currentPlayerId={pseudo} 
+                    pings={pings}
+                    onPing={handlePing}
+                    playerTeam={currentPlayerTeam}
                 />
                 <SkillBar />
             </div>

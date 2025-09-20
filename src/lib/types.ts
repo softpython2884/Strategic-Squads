@@ -89,3 +89,10 @@ export type Team = {
   bgClass: string;
   textClass: string;
 };
+
+export type Ping = {
+  id: string;
+  x: number;
+  y: number;
+  playerId: string;
+};

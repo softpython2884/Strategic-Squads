@@ -2,14 +2,19 @@
 'use client';
 
 import React from 'react';
-import type { Unit, Team } from '@/lib/types';
+import type { Unit, Team, Ping } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { TowerControl } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import PingDisplay from './ping-display';
 
 type MiniMapProps = {
   units: Unit[];
   teams: { [key: string]: Team };
   currentPlayerId: string | null;
+  pings: Ping[];
+  onPing: (coords: { x: number, y: number }) => void;
+  playerTeam: Team | null;
 };
 
 // Static objectives for now
@@ -21,9 +26,27 @@ const objectives = [
 ];
 
 
-const MiniMap = ({ units, teams, currentPlayerId }: MiniMapProps) => {
+const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: MiniMapProps) => {
+
+    const handleMapClick = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.altKey) {
+            const mapRect = event.currentTarget.getBoundingClientRect();
+            const clickX = event.clientX - mapRect.left;
+            const clickY = event.clientY - mapRect.top;
+
+            const targetX = (clickX / mapRect.width) * 100;
+            const targetY = (clickY / mapRect.height) * 100;
+
+            onPing({ x: targetX, y: targetY });
+        }
+        // Could also handle direct movement clicks on minimap here in the future
+    };
+
     return (
-        <div className="absolute bottom-4 right-4 w-64 h-64 bg-black/70 border-2 border-white/20 rounded-md pointer-events-auto overflow-hidden">
+        <div 
+            className="absolute bottom-4 right-4 w-64 h-64 bg-black/70 border-2 border-white/20 rounded-md pointer-events-auto overflow-hidden"
+            onClick={handleMapClick}
+        >
             {/* Placeholder for map generated from Tiled data */}
             <div className="relative w-full h-full bg-gray-800/50">
                 {/* Display objectives */}
@@ -43,27 +66,37 @@ const MiniMap = ({ units, teams, currentPlayerId }: MiniMapProps) => {
 
                 {/* Display units */}
                 {units.map(unit => {
-                    const isPlayer = unit.control.controllerPlayerId === currentPlayerId;
-                    const isAlly = !isPlayer && unit.teamId === teams[currentPlayerId?.split('-')[0] as 'blue' | 'red']?.name.toLowerCase().split(' ')[1];
+                    const isPlayerUnit = unit.control.controllerPlayerId === currentPlayerId;
+                    const isAlly = !isPlayerUnit && playerTeam && unit.teamId === (playerTeam.name === "Équipe Bleue" ? 'blue' : 'red');
+
                     let dotColor = teams[unit.teamId]?.color || '#ffffff';
-                    if (isPlayer) dotColor = '#00ffff'; // Cyan for player's units
+                    if (isPlayerUnit) dotColor = '#00ffff'; // Cyan for player's own units
+                    else if (isAlly) dotColor = teams[unit.teamId]?.color;
+                    else dotColor = teams[unit.teamId]?.color; // Could be different for enemies if needed
+                    
 
                     return (
                         <div
                             key={unit.id}
                             className={cn(
                                 "absolute w-2 h-2 rounded-full transform -translate-x-1/2 -translate-y-1/2",
-                                isPlayer ? "z-10" : "z-0"
+                                isPlayerUnit ? "z-10" : "z-0"
                             )}
                             style={{
                                 left: `${unit.position.x}%`,
                                 top: `${unit.position.y}%`,
                                 backgroundColor: dotColor,
-                                boxShadow: isPlayer ? `0 0 4px 1px ${dotColor}`: 'none',
+                                boxShadow: isPlayerUnit ? `0 0 4px 1px ${dotColor}`: 'none',
                             }}
                         />
                     );
                 })}
+                
+                <AnimatePresence>
+                    {pings.map((ping) => (
+                        <PingDisplay key={ping.id} x={ping.x} y={ping.y} isMinimap={true} />
+                    ))}
+                </AnimatePresence>
             </div>
         </div>
     );
