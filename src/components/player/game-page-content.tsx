@@ -44,6 +44,10 @@ export default function GamePageContent() {
     // Client-side state
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
+    const selectedUnitIdsRef = useRef(selectedUnitIds);
+    useEffect(() => {
+        selectedUnitIdsRef.current = selectedUnitIds;
+    }, [selectedUnitIds]);
 
     const mapDimensions = { 
         width: MAP_WIDTH_IN_TILES * TILE_SIZE, 
@@ -193,23 +197,23 @@ export default function GamePageContent() {
     }, [pseudo, sendWsMessage]);
 
     const handleMove = useCallback((coords: { x: number, y: number }) => {
-        if (!pseudo || selectedUnitIds.size === 0) return;
+        if (!pseudo || selectedUnitIdsRef.current.size === 0) return;
         sendWsMessage('move', {
             playerId: pseudo,
-            unitIds: Array.from(selectedUnitIds),
+            unitIds: Array.from(selectedUnitIdsRef.current),
             position: coords,
         });
-    }, [pseudo, selectedUnitIds, sendWsMessage]);
+    }, [pseudo, sendWsMessage]);
 
     const handleAttack = useCallback((target: Unit | null, coords: { x: number, y: number }) => {
-        if (!pseudo || selectedUnitIds.size === 0) return;
+        if (!pseudo || selectedUnitIdsRef.current.size === 0) return;
         sendWsMessage('attack', {
             playerId: pseudo,
-            unitIds: Array.from(selectedUnitIds),
+            unitIds: Array.from(selectedUnitIdsRef.current),
             targetId: target?.id || null,
             position: coords
         });
-    }, [pseudo, selectedUnitIds, sendWsMessage]);
+    }, [pseudo, sendWsMessage]);
     
     const handleUseSkill = useCallback((unitId: string, skillId: string) => {
         if (!pseudo) return;
@@ -364,5 +368,3 @@ export default function GamePageContent() {
         </main>
     );
 }
-
-    

@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
@@ -45,7 +45,7 @@ type GameMapProps = {
     mapDimensions: { width: number, height: number };
 };
 
-const UnitDisplay = React.memo(({ unit, isPlayerUnit, team, isTargeted, isSelected }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean }) => {
+const UnitDisplay = React.memo(({ unit, isPlayerUnit, team, isTargeted, isSelected, onSelect }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean, onSelect: (e: React.MouseEvent) => void }) => {
     const ClassIcon = classIcons[unit.type];
     const RoleIcon = compositionIcons[unit.composition];
     
@@ -67,7 +67,7 @@ const UnitDisplay = React.memo(({ unit, isPlayerUnit, team, isTargeted, isSelect
     const resourcePercentage = (unit.stats.resource / unit.stats.maxResource) * 100;
 
     return (
-        <div className="relative flex flex-col items-center w-8">
+        <div className="relative flex flex-col items-center w-8" onClick={onSelect}>
             {/* Unit Icon */}
             <div className="relative w-8 h-8 cursor-pointer group">
                  <div className={cn(
@@ -129,7 +129,6 @@ export default function GameMap({
     const [dragEnd, setDragEnd] = useState({ x: 0, y: 0 });
 
     const handleInteraction = (event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
-        event.preventDefault();
         
         const mapRect = mapContainerRef.current?.getBoundingClientRect();
         if (!mapRect) return;
@@ -156,29 +155,42 @@ export default function GameMap({
         }
 
         if (isContextMenu) {
+            event.preventDefault();
             onAttack(clickedUnit || null, { x: targetX, y: targetY });
             if (clickedUnit && !playerUnits.find(u => u.id === clickedUnit.id)) {
                  setTargetedUnitId(clickedUnit.id);
                  setTimeout(() => setTargetedUnitId(null), 500);
             }
-        } else {
-            if (!isDragging) {
-                const clickedPlayerUnit = playerUnits.find(u => u.id === clickedUnit?.id);
-                onSelectUnit(clickedPlayerUnit?.id || null, event.shiftKey);
-                if (!clickedPlayerUnit) {
-                    if(!clickedUnit) {
-                        onMove({ x: targetX, y: targetY });
-                    }
+        } else { // Left click
+            // Unit selection is handled by the UnitDisplay's onClick now
+            if (!clickedUnit) {
+                 if (isDragging) {
+                    // Logic is handled in mouseUp
+                } else {
+                    onMove({ x: targetX, y: targetY });
                 }
             }
         }
     };
+
+    // Manual event listener for wheel to set passive: false
+    useEffect(() => {
+        const mapEl = mapContainerRef.current;
+        if (!mapEl) return;
+
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            const newZoom = zoom - event.deltaY * 0.001;
+            onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
+        };
+
+        mapEl.addEventListener('wheel', handleWheel, { passive: false });
+        
+        return () => {
+            mapEl.removeEventListener('wheel', handleWheel);
+        };
+    }, [zoom, onZoomChange]);
     
-     const handleWheel = (event: React.WheelEvent) => {
-        event.preventDefault();
-        const newZoom = zoom - event.deltaY * 0.001;
-        onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
-    };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.button !== 0) return; // Only handle left-clicks for dragging
@@ -201,33 +213,34 @@ export default function GameMap({
     };
 
     const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isDragging) return;
-        setIsDragging(false);
-
-        const mapRect = mapContainerRef.current?.getBoundingClientRect();
-        if (!mapRect) return;
+        if (e.button !== 0) return;
 
         const startX = Math.min(dragStart.x, dragEnd.x);
         const startY = Math.min(dragStart.y, dragEnd.y);
         const endX = Math.max(dragStart.x, dragEnd.x);
         const endY = Math.max(dragStart.y, dragEnd.y);
 
-        if (endX - startX < 10 && endY - startY < 10) {
-            handleInteraction(e, false);
-            return;
-        }
-        
-        const selectedIds: string[] = [];
-        playerUnits.forEach(unit => {
-            const unitScreenX = (unit.position.x / 100 * mapDimensions.width - (cameraPosition.x - mapRect.width / (2 * zoom))) * zoom;
-            const unitScreenY = (unit.position.y / 100 * mapDimensions.height - (cameraPosition.y - mapRect.height / (2 * zoom))) * zoom;
+        if (isDragging && (endX - startX > 10 || endY - startY > 10)) {
+             // This was a drag, handle box selection
+            const mapRect = mapContainerRef.current?.getBoundingClientRect();
+            if (!mapRect) return;
+            
+            const selectedIds: string[] = [];
+            playerUnits.forEach(unit => {
+                const unitScreenX = (unit.position.x / 100 * mapDimensions.width - (cameraPosition.x - mapRect.width / (2 * zoom))) * zoom;
+                const unitScreenY = (unit.position.y / 100 * mapDimensions.height - (cameraPosition.y - mapRect.height / (2 * zoom))) * zoom;
 
-            if (unitScreenX >= startX && unitScreenX <= endX && unitScreenY >= startY && unitScreenY <= endY) {
-                selectedIds.push(unit.id);
-            }
-        });
-        
-        onSelectUnits(selectedIds, e.shiftKey);
+                if (unitScreenX >= startX && unitScreenX <= endX && unitScreenY >= startY && unitScreenY <= endY) {
+                    selectedIds.push(unit.id);
+                }
+            });
+            
+            onSelectUnits(selectedIds, e.shiftKey);
+        } else {
+            // This was a simple click
+            handleInteraction(e, false);
+        }
+        setIsDragging(false);
     };
 
     const SelectionBox = () => {
@@ -251,15 +264,14 @@ export default function GameMap({
             <div
                 ref={mapContainerRef}
                 className="relative w-full h-full overflow-hidden select-none bg-gray-800 cursor-crosshair"
-                onContextMenu={(e) => e.preventDefault()}
-                onWheel={handleWheel}
+                onContextMenu={(e) => handleInteraction(e, true)}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={() => setIsDragging(false)}
             >
                 <motion.div
-                    className="relative origin-top-left"
+                    className="relative origin-top-left bg-gray-800"
                     style={{
                         width: mapDimensions.width,
                         height: mapDimensions.height,
@@ -271,24 +283,23 @@ export default function GameMap({
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
+                     {/* The SimpleMapRenderer is removed to simplify and fix render issues */}
+
                     <AnimatePresence>
                         {units.map((unit) => (
                             <motion.div
                                 key={unit.id}
                                 layoutId={unit.id}
-                                initial={{
-                                    left: `${(unit.position.x / 100) * mapDimensions.width}px`,
-                                    top: `${(unit.position.y / 100) * mapDimensions.height}px`,
-                                    opacity: 0,
-                                }}
+                                initial={{ opacity: 0, scale: 0.5 }}
                                 animate={{
                                     left: `calc(${(unit.position.x / 100) * mapDimensions.width}px)`,
                                     top: `calc(${(unit.position.y / 100) * mapDimensions.height}px)`,
                                     opacity: 1,
+                                    scale: 1,
                                 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                className="absolute transform -translate-x-1/2 -translate-y-1/2"
                             >
                                 <UnitDisplay 
                                     unit={unit} 
@@ -296,6 +307,12 @@ export default function GameMap({
                                     team={teams[unit.teamId]}
                                     isTargeted={unit.id === targetedUnitId}
                                     isSelected={selectedUnitIds.has(unit.id)}
+                                    onSelect={(e) => {
+                                        e.stopPropagation(); // Prevent map click from firing
+                                        if (playerUnits.some(p => p.id === unit.id)) {
+                                            onSelectUnit(unit.id, e.shiftKey);
+                                        }
+                                    }}
                                 />
                             </motion.div>
                         ))}
