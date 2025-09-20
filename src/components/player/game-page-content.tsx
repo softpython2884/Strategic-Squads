@@ -208,7 +208,10 @@ export default function GamePageContent() {
     
     const handleUseSkill = useCallback((unitId: string, skillId: string) => {
         if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
-        
+
+        const caster = units.find(u => u.id === unitId);
+        if (!caster) return;
+
         console.log(`Client sending useSkill for unit ${unitId}, skill ${skillId}`);
         ws.current.send(JSON.stringify({
             type: 'useSkill',
@@ -216,9 +219,10 @@ export default function GamePageContent() {
                 playerId: pseudo,
                 unitId,
                 skillId,
+                targetId: caster.control.focus, // Send current target
             }
         }));
-    }, [pseudo]);
+    }, [pseudo, units]);
 
     const handleSelectUnit = useCallback((unitId: string | null, isShiftHeld: boolean) => {
         setSelectedUnitIds(prev => {
@@ -347,5 +351,3 @@ export default function GamePageContent() {
         </main>
     );
 }
-
-    

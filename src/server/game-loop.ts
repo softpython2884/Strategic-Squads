@@ -19,9 +19,10 @@ async function gameTick() {
   if (tickCount % 4 === 0) { // Only process time-based logic once per second
       // Process game time and associated logic (damage multipliers, etc.)
       gameState.processGameTick();
-      // Process cooldowns for all units
-      gameState.processCooldowns();
   }
+  
+  // Process cooldowns every tick for more responsive UI feedback
+  gameState.processCooldowns();
   
   // Process unit actions like movement and targeting every tick
   gameState.processUnitActions();
@@ -60,5 +61,3 @@ export async function stopGameLoop() {
     console.log('Game loop is not running.');
   }
 }
-
-    

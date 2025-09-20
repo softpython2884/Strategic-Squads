@@ -66,6 +66,7 @@ const unitCompositionData = [
 // =================================================================
 
 const GAME_DURATION_SECONDS = 25 * 60;
+const SKILL_RANGE = 15; // Generic skill range for now
 
 let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
 let liveTeams = {...teams};
@@ -81,19 +82,23 @@ const calculateDistance = (posA: {x: number, y: number}, posB: {x: number, y: nu
 };
 
 // Function to apply damage from an attacker to a defender
-const applyDamage = (attacker: Unit, defender: Unit) => {
-    const totalDamage = Math.max(0, (attacker.stats.atk * damageMultiplier) - defender.stats.def);
+const applyDamage = (attacker: Unit | null, defender: Unit, baseDamage: number) => {
+    // If there's an attacker, factor in their stats. Otherwise, just use base damage.
+    const attackerAtk = attacker ? attacker.stats.atk * damageMultiplier : 0;
+    const totalDamage = Math.max(0, baseDamage + attackerAtk - defender.stats.def);
+    
     defender.stats.hp = Math.max(0, defender.stats.hp - totalDamage);
     
-    // console.log(`${attacker.name} attacked ${defender.name} for ${totalDamage} damage. ${defender.name} HP: ${defender.stats.hp}`);
+    // console.log(`${attacker?.name || 'Skill'} damaged ${defender.name} for ${totalDamage}. HP: ${defender.stats.hp}`);
 
     if (defender.stats.hp <= 0) {
         defender.combat.status = 'down';
         defender.control.focus = undefined; // Stop attacking when down
         defender.control.moveTarget = undefined;
         console.log(`${defender.name} has been defeated.`);
-        // Here you could grant XP to the attacker
-        gameState.grantXp(attacker.id, 50); // Grant 50 xp for a kill
+        if (attacker) {
+            gameState.grantXp(attacker.id, 50); // Grant 50 xp for a kill
+        }
     }
 }
 
@@ -231,7 +236,7 @@ export const gameState = {
     return liveUnits.find(u => u.id === unitId);
   },
   
-  useSkill: (unitId: string, skillId: string) => {
+  useSkill: (unitId: string, skillId: string, targetId?: string) => {
     const unitIndex = liveUnits.findIndex(u => u.id === unitId);
     if (unitIndex === -1) {
       console.error(`useSkill: Unit with id ${unitId} not found.`);
@@ -263,9 +268,33 @@ export const gameState = {
         return false;
     }
 
-    // Apply skill logic here (damage, buffs, etc.)
-    // For now, just put it on cooldown.
-    console.log(`Unit ${unitId} used skill ${skill.name}. Putting on cooldown for ${skill.cooldown} seconds.`);
+    // --- Apply skill logic here ---
+    // If the skill does damage and has a target
+    if (skill.damage > 0 && targetId) {
+        const targetIndex = liveUnits.findIndex(u => u.id === targetId);
+        if (targetIndex === -1) {
+            console.log(`Skill target ${targetId} not found.`);
+            return false;
+        }
+        let target = liveUnits[targetIndex];
+
+        // Check range
+        const distance = calculateDistance(unit.position, target.position);
+        if (distance > SKILL_RANGE) {
+            console.log(`Target ${targetId} is out of range for skill ${skill.name}.`);
+            // In the future, we could make the unit move into range here.
+            return false;
+        }
+
+        // Apply damage
+        console.log(`Unit ${unit.name} uses ${skill.name} on ${target.name} for ${skill.damage} base damage.`);
+        applyDamage(unit, target, skill.damage);
+        liveUnits[targetIndex] = target; // Update target in liveUnits
+    }
+    
+    // --- End skill logic ---
+    
+    console.log(`Putting skill ${skill.name} on cooldown for ${skill.cooldown} seconds.`);
     unit.combat.cooldowns[skillId] = skill.cooldown;
     
     liveUnits[unitIndex] = unit;
@@ -293,7 +322,7 @@ export const gameState = {
         // Process attack cooldown
         let newAttackCooldown = unit.combat.attackCooldown;
         if (newAttackCooldown > 0) {
-            newAttackCooldown = Math.max(0, newAttackCooldown - TICK_INTERVAL_S);
+            newAttackCooldown = Math.max(0, newAttackCooldown - (TICK_INTERVAL_S / 4)); // attack cooldown is faster
             hasChanged = true;
         }
 
@@ -328,7 +357,7 @@ export const gameState = {
             } else {
                 // In range, attack
                 if (unit.combat.attackCooldown <= 0) {
-                    applyDamage(unit, target);
+                    applyDamage(unit, target, 0); // Base damage is 0, real damage comes from unit stats
                     unit.combat.attackCooldown = 1 / unit.stats.spd; // Reset cooldown
                 }
                 unit.control.moveTarget = undefined; // Stop moving if in attack range

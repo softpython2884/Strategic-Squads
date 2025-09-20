@@ -19,7 +19,7 @@ type PingPayload = {
 type ServerAction = 
     | { type: 'joinGame', payload: JoinGameInput }
     | { type: 'move', payload: { playerId: string, unitIds: string[], position: { x: number, y: number } } }
-    | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
+    | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string, targetId?: string } }
     | { type: 'attack', payload: { playerId: string, unitIds: string[], targetId: string | null, position: {x: number, y: number} } }
     | { type: 'startGame' }
     | { type: 'ping', payload: PingPayload };
@@ -51,7 +51,7 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId} from player ${action.payload.playerId}`);
             const skillUnit = gameState.getUnits().find(u => u.id === action.payload.unitId);
             if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId) {
-                gameState.useSkill(action.payload.unitId, action.payload.skillId);
+                gameState.useSkill(action.payload.unitId, action.payload.skillId, action.payload.targetId);
             } else {
                 console.log(`[Game Server] Invalid useSkill request for unit ${action.payload.unitId} by player ${action.payload.playerId}`);
             }
