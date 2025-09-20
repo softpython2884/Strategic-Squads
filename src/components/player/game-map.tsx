@@ -175,23 +175,23 @@ export default function GameMap({
 
     }, [isBoxSelecting, zoom, cameraPosition, mapDimensions, units, onPing, onAttack, onMove, playerUnits, isPanning]);
 
-    // Manual event listener for wheel to set passive: false
-    useEffect(() => {
-        const mapEl = mapContainerRef.current;
-        if (!mapEl) return;
+    // Manual event listener for wheel to set passive: false - TEMPORARILY DISABLED
+    // useEffect(() => {
+    //     const mapEl = mapContainerRef.current;
+    //     if (!mapEl) return;
 
-        const handleWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            const newZoom = zoom - event.deltaY * 0.001;
-            onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
-        };
+    //     const handleWheel = (event: WheelEvent) => {
+    //         event.preventDefault();
+    //         const newZoom = zoom - event.deltaY * 0.001;
+    //         onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
+    //     };
 
-        mapEl.addEventListener('wheel', handleWheel, { passive: false });
+    //     mapEl.addEventListener('wheel', handleWheel, { passive: false });
         
-        return () => {
-            mapEl.removeEventListener('wheel', handleWheel);
-        };
-    }, [zoom, onZoomChange]);
+    //     return () => {
+    //         mapEl.removeEventListener('wheel', handleWheel);
+    //     };
+    // }, [zoom, onZoomChange]);
     
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {

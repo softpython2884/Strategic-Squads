@@ -54,7 +54,7 @@ export default function GamePageContent() {
         height: MAP_HEIGHT_IN_TILES * TILE_SIZE 
     };
     
-    const [zoom, setZoom] = useState(1.0);
+    const [zoom, setZoom] = useState(1.5); // Start with a closer zoom
     const [cameraPosition, setCameraPosition] = useState({ x: mapDimensions.width / 2, y: mapDimensions.height / 2 });
 
     const ws = useRef<WebSocket | null>(null);
