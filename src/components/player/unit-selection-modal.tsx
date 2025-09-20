@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { HEROES_DATA } from '@/lib/heroes';
 import type { Hero } from '@/lib/types';
+import type { SquadUnit } from '@/app/actions';
 
 
 type UnitSelectionModalProps = {
@@ -15,23 +16,30 @@ type UnitSelectionModalProps = {
   onClose: () => void;
   onSelect: (hero: Hero) => void;
   squadType: string | null;
+  currentSquad: (SquadUnit | null)[];
 };
 
-export function UnitSelectionModal({ isOpen, onClose, onSelect, squadType }: UnitSelectionModalProps) {
+export function UnitSelectionModal({ isOpen, onClose, onSelect, squadType, currentSquad }: UnitSelectionModalProps) {
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
 
-  const availableHeroes = HEROES_DATA.filter(h => h.composition === squadType);
+  const alreadySelectedHeroIds = currentSquad.map(unit => unit?.id).filter(Boolean);
+
+  const availableHeroes = HEROES_DATA
+    .filter(h => h.composition === squadType)
+    .filter(h => !alreadySelectedHeroIds.includes(h.id));
 
   useEffect(() => {
-    if (isOpen && availableHeroes.length > 0) {
-      // Reset state when modal opens, select a default one
-      if (!selectedHero) {
-          setSelectedHero(availableHeroes[0]);
+    if (isOpen) {
+      // Reset state when modal opens, select the first available hero by default
+      if (availableHeroes.length > 0) {
+        setSelectedHero(availableHeroes[0]);
+      } else {
+        setSelectedHero(null);
       }
-    } else if (!isOpen) {
+    } else {
         setSelectedHero(null);
     }
-  }, [isOpen, availableHeroes, selectedHero]);
+  }, [isOpen, availableHeroes]);
 
   const handleSelectHero = (heroId: string) => {
       const hero = availableHeroes.find(h => h.id === heroId);
@@ -60,16 +68,20 @@ export function UnitSelectionModal({ isOpen, onClose, onSelect, squadType }: Uni
             <div className="flex flex-col gap-4">
                 <Label>Héros disponibles (type {squadType})</Label>
                 <ScrollArea className="h-72 w-full rounded-md border p-4">
-                    {availableHeroes.map(hero => (
-                        <div 
-                            key={hero.id} 
-                            className={`p-3 rounded-md cursor-pointer ${selectedHero?.id === hero.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
-                            onClick={() => handleSelectHero(hero.id)}
-                        >
-                            <p className="font-bold">{hero.name}</p>
-                            <p className="text-sm opacity-80">{hero.class}</p>
-                        </div>
-                    ))}
+                    {availableHeroes.length > 0 ? (
+                        availableHeroes.map(hero => (
+                            <div 
+                                key={hero.id} 
+                                className={`p-3 rounded-md cursor-pointer ${selectedHero?.id === hero.id ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+                                onClick={() => handleSelectHero(hero.id)}
+                            >
+                                <p className="font-bold">{hero.name}</p>
+                                <p className="text-sm opacity-80">{hero.class}</p>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center">Aucun autre héros de ce type n'est disponible.</p>
+                    )}
                 </ScrollArea>
             </div>
             {selectedHero && (

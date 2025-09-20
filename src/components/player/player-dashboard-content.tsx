@@ -178,6 +178,7 @@ export default function PlayerDashboardContent() {
         onClose={() => setIsModalOpen(false)}
         onSelect={handleSelectUnit}
         squadType={squadType}
+        currentSquad={squad}
       />
       <h1 className="mb-4 text-3xl font-bold font-headline">Tableau de Bord de l'Escouade</h1>
       <p className="mb-8 text-lg text-muted-foreground">
