@@ -358,37 +358,13 @@ export const gameState = {
 
     unitsToMove.forEach((unit, index) => {
         const targetPos = formationPositions[index];
-
-        const startX = Math.floor(unit.position.x / 100 * mapWidth);
-        const startY = Math.floor(unit.position.y / 100 * mapHeight);
-        const endX = Math.floor(targetPos.x / 100 * mapWidth);
-        const endY = Math.floor(targetPos.y / 100 * mapHeight);
-
-        const gridClone = grid.clone();
-        const finder = new AStarFinder();
-        
-        try {
-            gridClone.setWalkableAt(startX, startY, true);
-            gridClone.setWalkableAt(endX, endY, true);
-
-            const path = finder.findPath(startX, startY, endX, endY, gridClone);
-
-            const unitIndex = liveUnits.findIndex(u => u.id === unit.id);
-            if (unitIndex !== -1) {
-                if (path && path.length > 0) {
-                    const worldPath = path.map(p => [ (p[0] / mapWidth * 100), (p[1] / mapHeight * 100) ]);
-                    liveUnits[unitIndex].control = {
-                        ...liveUnits[unitIndex].control,
-                        moveTarget: targetPos,
-                        focus: undefined,
-                        path: worldPath,
-                    };
-                } else {
-                    console.log(`No path found for unit ${unit.id}`);
-                }
-            }
-        } catch (e) {
-            console.error(`Pathfinding error for unit ${unit.id}:`, e);
+        const unitIndex = liveUnits.findIndex(u => u.id === unit.id);
+        if (unitIndex !== -1) {
+            liveUnits[unitIndex].control = {
+                ...liveUnits[unitIndex].control,
+                moveTarget: targetPos,
+                focus: undefined,
+            };
         }
     });
   },
