@@ -31,6 +31,8 @@ type GameMapProps = {
     otherUnits: Unit[];
     teams: { [key: string]: Team };
     pings: Ping[];
+    zoom: number;
+    onZoomChange: (zoom: number) => void;
     onPing: (coords: { x: number, y: number }) => void;
     onMove: (coords: { x: number, y: number }) => void;
     onAttack: (target: Unit | null, coords: { x: number, y: number }) => void;
@@ -90,7 +92,7 @@ const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted }: { unit: Unit; isP
 }
 
 
-export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing, onMove, onAttack }: GameMapProps) {
+export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, onZoomChange, onPing, onMove, onAttack }: GameMapProps) {
     const allUnits = [...playerUnits, ...otherUnits];
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
 
@@ -98,18 +100,23 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing,
         event.preventDefault(); // Prevent default for both clicks
         
         const mapRect = event.currentTarget.getBoundingClientRect();
-        const clickX = event.clientX - mapRect.left;
-        const clickY = event.clientY - mapRect.top;
+        // This is the important part: we need to account for the current zoom and pan
+        // For now, let's assume the map content is scaled from its center.
+        const contentRect = event.currentTarget.firstChild?.getBoundingClientRect();
+        if (!contentRect) return;
 
-        const targetX = (clickX / mapRect.width) * 100;
-        const targetY = (clickY / mapRect.height) * 100;
+        const clickX = event.clientX - contentRect.left;
+        const clickY = event.clientY - contentRect.top;
+
+        const targetX = (clickX / contentRect.width) * 100;
+        const targetY = (clickY / contentRect.height) * 100;
         
         // This is a very basic way to check if a unit was clicked. A real game would use a more robust collision detection.
         const clickedUnit = allUnits.find(unit => {
-            const unitScreenX = (unit.position.x / 100) * mapRect.width;
-            const unitScreenY = (unit.position.y / 100) * mapRect.height;
+            const unitScreenX = (unit.position.x / 100) * contentRect.width;
+            const unitScreenY = (unit.position.y / 100) * contentRect.height;
             const distance = Math.sqrt(Math.pow(clickX - unitScreenX, 2) + Math.pow(clickY - unitScreenY, 2));
-            return distance < 30; // 30px radius for clicking a unit
+            return distance < 30 * zoom; // Adjust click radius by zoom
         });
 
         if (event.altKey) {
@@ -130,56 +137,71 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing,
             // Logic for selecting units would go here
         }
     };
+    
+     const handleWheel = (event: React.WheelEvent) => {
+        event.preventDefault();
+        const newZoom = zoom - event.deltaY * 0.001;
+        // Clamp zoom between 1 (fully zoomed out) and 2.5 (fully zoomed in)
+        onZoomChange(Math.max(1, Math.min(2.5, newZoom)));
+    };
 
 
     return (
         <TooltipProvider>
             <div
                 className="relative w-full h-full overflow-hidden select-none bg-muted"
-                onClick={(e) => handleInteraction(e, false)}
-                onContextMenu={(e) => handleInteraction(e, true)}
+                onContextMenu={(e) => e.preventDefault()} // Prevent context menu on the entire map container
+                onWheel={handleWheel}
             >
-                <Image
-                    src="https://picsum.photos/seed/map/2048/2048"
-                    alt="Game Map"
-                    layout="fill"
-                    objectFit="cover"
-                    className="object-none opacity-50 pointer-events-none"
-                    data-ai-hint="fantasy map"
-                    priority
-                />
+                <motion.div
+                    className="relative w-full h-full origin-center"
+                    animate={{ scale: zoom }}
+                    transition={{ duration: 0.2 }}
+                     onClick={(e) => handleInteraction(e, false)}
+                     onContextMenu={(e) => handleInteraction(e, true)}
+                >
+                    <Image
+                        src="https://picsum.photos/seed/map/2048/2048"
+                        alt="Game Map"
+                        layout="fill"
+                        objectFit="cover"
+                        className="object-none opacity-50 pointer-events-none"
+                        data-ai-hint="fantasy map"
+                        priority
+                    />
 
-                <AnimatePresence>
-                    {allUnits.map((unit) => (
-                        <motion.div
-                            key={unit.id}
-                            layout
-                            initial={{
-                                left: `${unit.position.x}%`,
-                                top: `${unit.position.y}%`,
-                            }}
-                            animate={{
-                                left: `${unit.position.x}%`,
-                                top: `${unit.position.y}%`,
-                            }}
-                            transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-                            className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                        >
-                            <UnitDisplay 
-                                unit={unit} 
-                                isPlayerUnit={playerUnits.some(p => p.id === unit.id)} 
-                                team={teams[unit.teamId]}
-                                isTargeted={unit.id === targetedUnitId}
-                            />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
+                    <AnimatePresence>
+                        {allUnits.map((unit) => (
+                            <motion.div
+                                key={unit.id}
+                                layout
+                                initial={{
+                                    left: `${unit.position.x}%`,
+                                    top: `${unit.position.y}%`,
+                                }}
+                                animate={{
+                                    left: `${unit.position.x}%`,
+                                    top: `${unit.position.y}%`,
+                                }}
+                                transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
+                                className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                            >
+                                <UnitDisplay 
+                                    unit={unit} 
+                                    isPlayerUnit={playerUnits.some(p => p.id === unit.id)} 
+                                    team={teams[unit.teamId]}
+                                    isTargeted={unit.id === targetedUnitId}
+                                />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
 
-                <AnimatePresence>
-                    {pings.map((ping) => (
-                        <PingDisplay key={ping.id} x={ping.x} y={ping.y} />
-                    ))}
-                </AnimatePresence>
+                    <AnimatePresence>
+                        {pings.map((ping) => (
+                            <PingDisplay key={ping.id} x={ping.x} y={ping.y} />
+                        ))}
+                    </AnimatePresence>
+                </motion.div>
             </div>
         </TooltipProvider>
     );

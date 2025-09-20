@@ -36,6 +36,7 @@ export default function GamePageContent() {
     const [gameTime, setGameTime] = useState(0);
     const [pings, setPings] = useState<Ping[]>([]);
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
+    const [zoom, setZoom] = useState(1.25);
     
     const ws = useRef<WebSocket | null>(null);
 
@@ -169,6 +170,8 @@ export default function GamePageContent() {
                     otherUnits={otherUnits}
                     teams={teams}
                     pings={pings}
+                    zoom={zoom}
+                    onZoomChange={setZoom}
                     onPing={handlePing}
                     onMove={handleMove}
                     onAttack={handleAttack}
