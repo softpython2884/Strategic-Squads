@@ -68,3 +68,17 @@ export async function useSkill(playerId: string, unitId: string, skillId: string
     throw new Error(`Failed to send useSkill action: ${error.message}`);
   }
 }
+
+
+// Server actions to safely access game state from client components
+export async function getGameEventsLog(): Promise<string> {
+    return gameState.getGameEventsLog();
+}
+
+export async function getTeamResourceData(): Promise<any[]> {
+    return gameState.getTeamResourceData();
+}
+
+export async function getUnitCompositionData(): Promise<any[]> {
+    return gameState.getUnitCompositionData();
+}

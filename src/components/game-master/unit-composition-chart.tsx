@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
   ChartConfig,
@@ -7,6 +9,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { getUnitCompositionData } from "@/app/actions";
+import { Skeleton } from "../ui/skeleton";
 
 const chartConfig = {
   blue: {
@@ -19,15 +23,24 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type Props = {
-  data: {
-    composition: string;
-    blue: number;
-    red: number;
-  }[];
-};
+type ChartData = {
+  composition: string;
+  blue: number;
+  red: number;
+}[];
 
-export default function UnitCompositionChart({ data }: Props) {
+
+export default function UnitCompositionChart() {
+  const [data, setData] = useState<ChartData | null>(null);
+
+  useEffect(() => {
+    getUnitCompositionData().then(setData).catch(console.error);
+  }, []);
+
+  if (!data) {
+    return <Skeleton className="w-full h-64" />;
+  }
+
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
       <BarChart accessibilityLayer data={data}>

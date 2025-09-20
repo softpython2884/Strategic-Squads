@@ -4,7 +4,6 @@ import AiBehaviorTester from "./ai-behavior-tester";
 import EventLog from "./event-log";
 import TeamStatsChart from "./team-stats-chart";
 import UnitCompositionChart from "./unit-composition-chart";
-import { gameState } from "@/server/game-state";
 
 export default function TechnicalDashboard() {
   return (
@@ -25,7 +24,7 @@ export default function TechnicalDashboard() {
             <CardDescription>Ressources collectées par minute par chaque équipe.</CardDescription>
           </CardHeader>
           <CardContent>
-            <TeamStatsChart data={gameState.getTeamResourceData()} />
+            <TeamStatsChart />
           </CardContent>
         </Card>
       </div>
@@ -45,7 +44,7 @@ export default function TechnicalDashboard() {
             <CardDescription>Distribution actuelle des unités dans les deux équipes.</CardDescription>
           </CardHeader>
           <CardContent>
-            <UnitCompositionChart data={gameState.getUnitCompositionData()} />
+            <UnitCompositionChart />
           </CardContent>
         </Card>
       </div>

@@ -1,5 +1,7 @@
+
 "use client";
 
+import { useEffect, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartConfig,
@@ -7,6 +9,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { getTeamResourceData } from "@/app/actions";
+import { Skeleton } from "../ui/skeleton";
 
 const chartConfig = {
   blue: {
@@ -19,15 +23,23 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type Props = {
-  data: {
-    minute: string;
-    blue: number;
-    red: number;
-  }[];
-};
+type ChartData = {
+  minute: string;
+  blue: number;
+  red: number;
+}[];
 
-export default function TeamStatsChart({ data }: Props) {
+export default function TeamStatsChart() {
+  const [data, setData] = useState<ChartData | null>(null);
+
+  useEffect(() => {
+    getTeamResourceData().then(setData).catch(console.error);
+  }, []);
+
+  if (!data) {
+    return <Skeleton className="w-full h-64" />;
+  }
+
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
       <AreaChart
