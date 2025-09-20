@@ -39,7 +39,8 @@ export function UnitSelectionModal({ isOpen, onClose, onSelect, squadType, curre
     } else {
         setSelectedHero(null);
     }
-  }, [isOpen, availableHeroes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleSelectHero = (heroId: string) => {
       const hero = availableHeroes.find(h => h.id === heroId);
