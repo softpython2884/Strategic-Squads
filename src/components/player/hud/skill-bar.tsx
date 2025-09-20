@@ -6,40 +6,46 @@ import { cn } from '@/lib/utils';
 import { Lock } from 'lucide-react';
 import React from 'react';
 
+// NOTE: These are dummy skills for layout and styling purposes.
+// They will be replaced with real data from the selected unit.
 const skills = [
-    { shortcut: 'A', name: 'Compétence 1', cooldown: 10, remaining: 3 },
-    { shortcut: 'Z', name: 'Compétence 2', cooldown: 5, remaining: 0 },
-    { shortcut: 'E', name: 'Compétence 3', cooldown: 12, remaining: 0 },
-    { shortcut: 'R', name: 'Compétence 4', cooldown: 8, remaining: 5 },
-    { shortcut: 'T', name: 'Compétence 5', locked: true },
-    { shortcut: 'Y', name: 'Compétence 6', locked: true },
-    { shortcut: 'U', name: 'Compétence 7', locked: true },
-    { shortcut: 'I', name: 'Compétence 8', locked: true },
+    { shortcut: 'Q', name: 'Frappe Puissante', cooldown: 10, remaining: 0, unlocked: true },
+    { shortcut: 'W', name: 'Charge Bestiale', cooldown: 12, remaining: 8, unlocked: true },
+    { shortcut: 'E', name: 'Cri de Fureur', cooldown: 15, remaining: 0, unlocked: true },
+    { shortcut: 'R', name: 'Impact Dévastateur', cooldown: 0, remaining: 0, unlocked: false },
 ];
 
 const ultimate = {
     shortcut: 'F',
     name: 'Ultime Signature',
     cooldown: 120,
-    remaining: 45
+    remaining: 45,
+    unlocked: true,
 }
 
 const SkillIcon = ({ skill }: { skill: any }) => {
-    const inCooldown = !skill.locked && skill.remaining > 0;
+    const inCooldown = skill.unlocked && skill.remaining > 0;
     
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <div className="relative w-12 h-12 bg-black/60 border-2 border-white/20 rounded-md cursor-pointer pointer-events-auto hover:border-yellow-400">
+                <div className={cn(
+                    "relative w-12 h-12 bg-black/60 border-2 border-white/20 rounded-md cursor-pointer pointer-events-auto hover:border-yellow-400 transition-all",
+                    !skill.unlocked && "cursor-not-allowed hover:border-white/20"
+                )}>
                     <div className="w-full h-full flex items-center justify-center">
                         {/* Placeholder for skill icon */}
                     </div>
                     {inCooldown && (
-                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white font-bold text-lg">
-                            {skill.remaining}
-                        </div>
+                        <>
+                            <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-white font-bold text-lg font-headline">
+                                {skill.remaining}
+                            </div>
+                            <div className="absolute inset-0 bg-black/70"></div>
+                        </>
+
                     )}
-                    {skill.locked && (
+                    {!skill.unlocked && (
                          <div className="absolute inset-0 bg-black/80 flex items-center justify-center text-white/50">
                             <Lock className="w-6 h-6"/>
                         </div>
@@ -51,20 +57,30 @@ const SkillIcon = ({ skill }: { skill: any }) => {
             </TooltipTrigger>
             <TooltipContent side="top">
                 <p className="font-bold">{skill.name}</p>
-                {!skill.locked && <p>Cooldown: {skill.cooldown}s</p>}
-                {skill.locked && <p>Non débloqué</p>}
+                {skill.unlocked ? (
+                    <p className="text-sm text-muted-foreground">Cooldown: {skill.cooldown}s</p>
+                ) : (
+                    <p className="text-sm text-amber-400">Non débloqué</p>
+                )}
             </TooltipContent>
         </Tooltip>
     )
 }
 
 const SkillBar = () => {
+    // For now, we just show 4 skills + 1 ultimate.
+    // This could be expanded based on the selected unit later.
     return (
         <TooltipProvider>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 rounded-t-lg">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-end gap-3 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 rounded-t-lg">
                 {skills.map(skill => <SkillIcon key={skill.shortcut} skill={skill} />)}
                 <div className="w-px h-16 bg-white/20 mx-2"></div>
-                <SkillIcon skill={ultimate} />
+                <div className="relative">
+                    {/* Make the ultimate icon bigger */}
+                    <div className="w-16 h-16">
+                         <SkillIcon skill={ultimate} />
+                    </div>
+                </div>
             </div>
         </TooltipProvider>
     );
