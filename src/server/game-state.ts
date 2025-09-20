@@ -54,18 +54,17 @@ function initializeMapAndPathfinding() {
             console.warn("Could not find a 'admin' tile layer for walls in map.json. All tiles are walkable.");
         }
 
-        // --- Process Objectives & Spawns ---
-        // NOTE: This assumes objectives are placed using tiles on a specific layer.
-        // A better approach is using an Object Layer in Tiled.
+        // --- Process Objectives & Spawns from Tile Layers ---
         const devLayer = mapData.layers.find((l: any) => l.name === 'dev'); // Towers/Idols
         const helperLayer = mapData.layers.find((l: any) => l.name === 'helper'); // Spawns
-        const blueTowerTileset = mapData.tilesets.find((ts: any) => ts.name === 'blue_tower');
-        const redTowerTileset = mapData.tilesets.find((ts: any) => ts.name === 'red_tower');
-        const blueSpawnTileset = mapData.tilesets.find((ts: any) => ts.name === 'blue_spawn');
-        const redSpawnTileset = mapData.tilesets.find((ts: any) => ts.name === 'red_spawn');
         
-        // This is a simplified parser based on user's notes.
-        // It assumes the top-left tile of a 2x2 structure is the anchor.
+        // Find tilesets by name
+        const tilesets: {[key: string]: any} = {};
+        mapData.tilesets.forEach((ts: any) => {
+            tilesets[ts.name] = ts;
+        });
+
+        // Parse Towers/Idols from 'dev' layer
         if (devLayer && devLayer.type === 'tilelayer') {
              for (let y = 0; y < mapHeight -1; y++) {
                 for (let x = 0; x < mapWidth -1; x++) {
@@ -76,10 +75,10 @@ function initializeMapAndPathfinding() {
                     let team: 'blue' | 'red' | null = null;
                     let type: 'tower' | 'idol' | null = null;
                     
-                    if (blueTowerTileset && gid >= blueTowerTileset.firstgid && gid < blueTowerTileset.firstgid + blueTowerTileset.tilecount) {
+                    if (tilesets.blue_tower && gid >= tilesets.blue_tower.firstgid && gid < tilesets.blue_tower.firstgid + tilesets.blue_tower.tilecount) {
                         team = 'blue';
                         type = 'tower';
-                    } else if (redTowerTileset && gid >= redTowerTileset.firstgid && gid < redTowerTileset.firstgid + redTowerTileset.tilecount) {
+                    } else if (tilesets.red_tower && gid >= tilesets.red_tower.firstgid && gid < tilesets.red_tower.firstgid + tilesets.red_tower.tilecount) {
                         team = 'red';
                         type = 'tower';
                     }
@@ -88,7 +87,7 @@ function initializeMapAndPathfinding() {
                          tempObjectives.push({
                             id: `${type}-${team}-${x}-${y}`,
                             name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${team.charAt(0).toUpperCase() + team.slice(1)}`,
-                            position: { x: (x + 1) / mapWidth * 100, y: (y + 1) / mapHeight * 100 }, // Center of the 2x2 structure
+                            position: { x: ((x + 1) / mapWidth) * 100, y: ((y + 1) / mapHeight) * 100 }, // Center of the 2x2 structure
                             teamId: team,
                             type: type,
                             stats: { hp: 5000, maxHp: 5000 }
@@ -105,6 +104,7 @@ function initializeMapAndPathfinding() {
             }
         }
         
+        // Parse Spawns from 'helper' layer
          if (helperLayer && helperLayer.type === 'tilelayer') {
             for (let y = 0; y < mapHeight; y++) {
                 for (let x = 0; x < mapWidth; x++) {
@@ -112,10 +112,10 @@ function initializeMapAndPathfinding() {
                      const gid = helperLayer.data[tileIndex];
                      if (gid === 0) continue;
                      
-                      if (blueSpawnTileset && gid >= blueSpawnTileset.firstgid) {
-                         spawnPoints.blue = { x: x / mapWidth * 100, y: y / mapHeight * 100 };
-                      } else if (redSpawnTileset && gid >= redSpawnTileset.firstgid) {
-                         spawnPoints.red = { x: x / mapWidth * 100, y: y / mapHeight * 100 };
+                      if (tilesets.blue_spawn && gid >= tilesets.blue_spawn.firstgid) {
+                         spawnPoints.blue = { x: (x / mapWidth) * 100, y: (y / mapHeight) * 100 };
+                      } else if (tilesets.red_spawn && gid >= tilesets.red_spawn.firstgid) {
+                         spawnPoints.red = { x: (x / mapWidth) * 100, y: (y / mapHeight) * 100 };
                       }
                 }
             }
@@ -125,6 +125,7 @@ function initializeMapAndPathfinding() {
 
     } catch (error) {
         console.error('Failed to initialize map data:', error);
+        // Fallback to a default grid if map loading fails
         mapWidth = 64; mapHeight = 64; tileWidth = 32; tileHeight = 32;
         grid = new Grid(mapWidth, mapHeight);
     }
