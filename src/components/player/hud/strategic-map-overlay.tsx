@@ -1,5 +1,5 @@
 
-'use client';
+'use-client';
 
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -102,7 +102,16 @@ const StrategicMapOverlay = ({ isOpen, onClose, units, teams, pings, onPing }: S
               {/* Display pings */}
               <AnimatePresence>
                 {pings.map((ping) => (
-                    <PingDisplay key={ping.id} x={ping.x} y={ping.y} />
+                    <div 
+                        key={ping.id} 
+                        className="absolute"
+                        style={{
+                            left: `${ping.x}%`,
+                            top: `${ping.y}%`,
+                        }}
+                    >
+                        <PingDisplay />
+                    </div>
                 ))}
               </AnimatePresence>
             </div>

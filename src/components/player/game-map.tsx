@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
@@ -32,7 +32,9 @@ type GameMapProps = {
     teams: { [key: string]: Team };
     pings: Ping[];
     zoom: number;
+    cameraPosition: { x: number, y: number };
     onZoomChange: (zoom: number) => void;
+    onCameraPan: (pan: { x: number, y: number }) => void;
     onPing: (coords: { x: number, y: number }) => void;
     onMove: (coords: { x: number, y: number }) => void;
     onAttack: (target: Unit | null, coords: { x: number, y: number }) => void;
@@ -92,31 +94,32 @@ const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted }: { unit: Unit; isP
 }
 
 
-export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, onZoomChange, onPing, onMove, onAttack }: GameMapProps) {
+export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, cameraPosition, onZoomChange, onCameraPan, onPing, onMove, onAttack }: GameMapProps) {
     const allUnits = [...playerUnits, ...otherUnits];
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
 
     const handleInteraction = (event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
         event.preventDefault(); // Prevent default for both clicks
         
-        const mapRect = event.currentTarget.getBoundingClientRect();
-        // This is the important part: we need to account for the current zoom and pan
-        // For now, let's assume the map content is scaled from its center.
-        const contentRect = event.currentTarget.firstChild?.getBoundingClientRect();
-        if (!contentRect) return;
-
-        const clickX = event.clientX - contentRect.left;
-        const clickY = event.clientY - contentRect.top;
-
-        const targetX = (clickX / contentRect.width) * 100;
-        const targetY = (clickY / contentRect.height) * 100;
+        const mapRect = mapContainerRef.current?.getBoundingClientRect();
+        if (!mapRect) return;
         
-        // This is a very basic way to check if a unit was clicked. A real game would use a more robust collision detection.
+        const viewX = event.clientX - mapRect.left;
+        const viewY = event.clientY - mapRect.top;
+
+        // Account for camera pan and zoom to get world coordinates
+        const worldX = (viewX / zoom) + (cameraPosition.x - mapRect.width / (2 * zoom));
+        const worldY = (viewY / zoom) + (cameraPosition.y - mapRect.height / (2 * zoom));
+
+        const targetX = (worldX / (mapRect.width)) * 100;
+        const targetY = (worldY / (mapRect.height)) * 100;
+        
         const clickedUnit = allUnits.find(unit => {
-            const unitScreenX = (unit.position.x / 100) * contentRect.width;
-            const unitScreenY = (unit.position.y / 100) * contentRect.height;
-            const distance = Math.sqrt(Math.pow(clickX - unitScreenX, 2) + Math.pow(clickY - unitScreenY, 2));
-            return distance < 30 * zoom; // Adjust click radius by zoom
+            const unitScreenX = (unit.position.x / 100) * mapRect.width;
+            const unitScreenY = (unit.position.y / 100) * mapRect.height;
+            const distance = Math.sqrt(Math.pow(worldX - unitScreenX, 2) + Math.pow(worldY - unitScreenY, 2));
+            return distance < 20; // Click radius in world units
         });
 
         if (event.altKey) {
@@ -141,31 +144,36 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, o
      const handleWheel = (event: React.WheelEvent) => {
         event.preventDefault();
         const newZoom = zoom - event.deltaY * 0.001;
-        // Clamp zoom between 1 (fully zoomed out) and 2.5 (fully zoomed in)
-        onZoomChange(Math.max(1, Math.min(2.5, newZoom)));
+        // Clamp zoom between 0.8 (min zoom) and 2.5 (max zoom)
+        onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
     };
 
 
     return (
         <TooltipProvider>
             <div
-                className="relative w-full h-full overflow-hidden select-none bg-muted"
+                ref={mapContainerRef}
+                className="relative w-full h-full overflow-hidden select-none bg-muted cursor-crosshair"
                 onContextMenu={(e) => e.preventDefault()} // Prevent context menu on the entire map container
                 onWheel={handleWheel}
+                onClick={(e) => handleInteraction(e, false)}
+                onContextMenu={(e) => handleInteraction(e, true)}
             >
                 <motion.div
-                    className="relative w-full h-full origin-center"
-                    animate={{ scale: zoom }}
-                    transition={{ duration: 0.2 }}
-                     onClick={(e) => handleInteraction(e, false)}
-                     onContextMenu={(e) => handleInteraction(e, true)}
+                    className="relative w-[2048px] h-[2048px] origin-top-left"
+                     animate={{
+                        scale: zoom,
+                        translateX: `${-cameraPosition.x * zoom + (mapContainerRef.current?.clientWidth ?? 0) / 2}px`,
+                        translateY: `${-cameraPosition.y * zoom + (mapContainerRef.current?.clientHeight ?? 0) / 2}px`,
+                    }}
+                    transition={{ duration: 0.2, ease: "linear" }}
                 >
                     <Image
                         src="https://picsum.photos/seed/map/2048/2048"
                         alt="Game Map"
                         layout="fill"
                         objectFit="cover"
-                        className="object-none opacity-50 pointer-events-none"
+                        className="absolute inset-0 object-cover opacity-50 pointer-events-none"
                         data-ai-hint="fantasy map"
                         priority
                     />
@@ -176,12 +184,12 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, o
                                 key={unit.id}
                                 layout
                                 initial={{
-                                    left: `${unit.position.x}%`,
-                                    top: `${unit.position.y}%`,
+                                    left: `calc(${unit.position.x / 100 * 2048}px)`,
+                                    top: `calc(${unit.position.y / 100 * 2048}px)`,
                                 }}
                                 animate={{
-                                    left: `${unit.position.x}%`,
-                                    top: `${unit.position.y}%`,
+                                    left: `calc(${unit.position.x / 100 * 2048}px)`,
+                                    top: `calc(${unit.position.y / 100 * 2048}px)`,
                                 }}
                                 transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
                                 className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
@@ -198,7 +206,16 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, zoom, o
 
                     <AnimatePresence>
                         {pings.map((ping) => (
-                            <PingDisplay key={ping.id} x={ping.x} y={ping.y} />
+                             <div 
+                                key={ping.id} 
+                                className="absolute"
+                                style={{
+                                    left: `calc(${ping.x / 100 * 2048}px)`,
+                                    top: `calc(${ping.y / 100 * 2048}px)`,
+                                }}
+                            >
+                                <PingDisplay />
+                            </div>
                         ))}
                     </AnimatePresence>
                 </motion.div>

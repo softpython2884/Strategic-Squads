@@ -26,6 +26,7 @@ function GameMapLoading() {
 }
 
 const PING_DURATION_MS = 5000;
+const MAP_DIMENSIONS = { width: 2048, height: 2048 }; // World size in pixels
 
 export default function GamePageContent() {
     const searchParams = useSearchParams();
@@ -36,9 +37,13 @@ export default function GamePageContent() {
     const [gameTime, setGameTime] = useState(0);
     const [pings, setPings] = useState<Ping[]>([]);
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
-    const [zoom, setZoom] = useState(1.25);
     
+    // Camera state
+    const [zoom, setZoom] = useState(1.0);
+    const [cameraPosition, setCameraPosition] = useState({ x: MAP_DIMENSIONS.width / 2, y: MAP_DIMENSIONS.height / 2 });
+
     const ws = useRef<WebSocket | null>(null);
+    const panIntervalRef = useRef<number | null>(null);
 
     useEffect(() => {
         const wsUrl = `ws://${window.location.hostname}:8080`;
@@ -57,7 +62,6 @@ export default function GamePageContent() {
                 } else if (message.type === 'ping-broadcast') {
                     const newPing = message.payload as Ping;
                     setPings(prevPings => [...prevPings, newPing]);
-                    // Remove the ping after a delay
                     setTimeout(() => {
                         setPings(prev => prev.filter(p => p.id !== newPing.id));
                     }, PING_DURATION_MS);
@@ -77,7 +81,16 @@ export default function GamePageContent() {
         };
     }, []);
 
-    // Handle strategic map toggle
+    const centerCameraOnSquad = useCallback(() => {
+        const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
+        if (playerUnits.length > 0) {
+            const avgX = playerUnits.reduce((sum, u) => sum + (u.position.x / 100 * MAP_DIMENSIONS.width), 0) / playerUnits.length;
+            const avgY = playerUnits.reduce((sum, u) => sum + (u.position.y / 100 * MAP_DIMENSIONS.height), 0) / playerUnits.length;
+            setCameraPosition({ x: avgX, y: avgY });
+        }
+    }, [units, pseudo]);
+    
+    // Handle keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === ',') {
@@ -87,10 +100,64 @@ export default function GamePageContent() {
              if (e.key === 'Escape' && isStrategicMapOpen) {
                 setIsStrategicMapOpen(false);
             }
+            if (e.key === ' ' || e.key === 'Tab') {
+                e.preventDefault();
+                centerCameraOnSquad();
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isStrategicMapOpen]);
+    }, [isStrategicMapOpen, centerCameraOnSquad]);
+
+    // Handle camera edge panning
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            const edgeSize = 30; // pixels from the edge to start panning
+            const panSpeed = 15; // pixels per frame
+            
+            let panX = 0;
+            let panY = 0;
+
+            if (e.clientX < edgeSize) panX = -panSpeed;
+            if (e.clientX > window.innerWidth - edgeSize) panX = panSpeed;
+            if (e.clientY < edgeSize) panY = -panSpeed;
+            if (e.clientY > window.innerHeight - edgeSize) panY = panSpeed;
+
+            if (panX !== 0 || panY !== 0) {
+                if (!panIntervalRef.current) {
+                    panIntervalRef.current = window.setInterval(() => {
+                        setCameraPosition(prev => ({
+                            x: Math.max(0, Math.min(MAP_DIMENSIONS.width, prev.x + panX)),
+                            y: Math.max(0, Math.min(MAP_DIMENSIONS.height, prev.y + panY))
+                        }));
+                    }, 16); // ~60fps
+                }
+            } else {
+                if (panIntervalRef.current) {
+                    clearInterval(panIntervalRef.current);
+                    panIntervalRef.current = null;
+                }
+            }
+        };
+        
+        const handleMouseLeave = () => {
+             if (panIntervalRef.current) {
+                clearInterval(panIntervalRef.current);
+                panIntervalRef.current = null;
+            }
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        document.body.addEventListener('mouseleave', handleMouseLeave);
+        
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            document.body.removeEventListener('mouseleave', handleMouseLeave);
+             if (panIntervalRef.current) {
+                clearInterval(panIntervalRef.current);
+            }
+        };
+    }, []);
 
     const handlePing = useCallback((coords: { x: number, y: number }) => {
         if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
@@ -116,8 +183,6 @@ export default function GamePageContent() {
         if (playerUnitsToMove.length === 0) return;
         
         try {
-            // This is a simplified move command. A real implementation might
-            // calculate individual paths or formations.
             const movePromises = playerUnitsToMove.map(unit => 
                 moveUnit(pseudo, unit.id, coords)
             );
@@ -171,7 +236,9 @@ export default function GamePageContent() {
                     teams={teams}
                     pings={pings}
                     zoom={zoom}
+                    cameraPosition={cameraPosition}
                     onZoomChange={setZoom}
+                    onCameraPan={setCameraPosition}
                     onPing={handlePing}
                     onMove={handleMove}
                     onAttack={handleAttack}

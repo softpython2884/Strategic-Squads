@@ -5,8 +5,8 @@ import React from 'react';
 import type { Unit, Team, Ping } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { TowerControl } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
-import PingDisplay from './ping-display';
+import { AnimatePresence, motion } from 'framer-motion';
+
 
 type MiniMapProps = {
   units: Unit[];
@@ -24,6 +24,22 @@ const objectives = [
   { id: 'idol-n', name: "Idole Nord", position: { x: 15, y: 15 }, teamId: 'red' },
   { id: 'idol-s', name: "Idole Sud", position: { x: 85, y: 85 }, teamId: 'blue' },
 ];
+
+const MiniPingDisplay = ({ x, y }: { x: number, y: number }) => {
+    return (
+        <motion.div
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none w-10 h-10"
+            style={{ left: `${x}%`, top: `${y}%` }}
+            initial={{ opacity: 1, scale: 0 }}
+            animate={{ opacity: 0, scale: 1.5 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+        >
+            <div className="relative w-full h-full">
+                <div className="absolute inset-0 border-yellow-400 border rounded-full" />
+            </div>
+        </motion.div>
+    );
+};
 
 
 const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: MiniMapProps) => {
@@ -94,7 +110,7 @@ const MiniMap = ({ units, teams, currentPlayerId, pings, onPing, playerTeam }: M
                 
                 <AnimatePresence>
                     {pings.map((ping) => (
-                        <PingDisplay key={ping.id} x={ping.x} y={ping.y} isMinimap={true} />
+                        <MiniPingDisplay key={ping.id} x={ping.x} y={ping.y} />
                     ))}
                 </AnimatePresence>
             </div>
