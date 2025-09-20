@@ -112,9 +112,15 @@ export default function GamePageContent() {
     const handleAttack = useCallback((target: Unit | null, coords: { x: number, y: number }) => {
         if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
         
-        console.log('Attack command issued!', { target, coords });
-        // Here we would send an 'attack' message via WebSocket
-        // For now, we can just log it or show a visual effect.
+        ws.current.send(JSON.stringify({
+            type: 'attack',
+            payload: {
+                playerId: pseudo,
+                targetId: target?.id || null,
+                position: coords
+            }
+        }));
+
     }, [pseudo]);
     
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];

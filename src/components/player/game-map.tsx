@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
@@ -95,6 +95,8 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing,
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
 
     const handleInteraction = (event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
+        event.preventDefault(); // Prevent default for both clicks
+        
         const mapRect = event.currentTarget.getBoundingClientRect();
         const clickX = event.clientX - mapRect.left;
         const clickY = event.clientY - mapRect.top;
@@ -116,7 +118,6 @@ export default function GameMap({ playerUnits, otherUnits, teams, pings, onPing,
         }
 
         if (isContextMenu) { // Right-click for attack
-            event.preventDefault();
             onAttack(clickedUnit || null, { x: targetX, y: targetY });
             if (clickedUnit && !playerUnits.find(u => u.id === clickedUnit.id)) {
                  setTargetedUnitId(clickedUnit.id);

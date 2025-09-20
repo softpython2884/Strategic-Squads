@@ -48,9 +48,10 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             }
             break;
         case 'attack':
-            console.log(`[Game Server] Handling attack for player ${action.payload.playerId}`);
+            console.log(`[Game Server] Handling attack for player ${action.payload.playerId} on target ${action.payload.targetId || 'ground'}`);
             // TODO: Implement attack logic on the server
             // Find the player's units, determine targets, calculate damage, etc.
+            // For now, we can just acknowledge the command.
             break;
         case 'useSkill':
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId}`);
