@@ -3,14 +3,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Shield, Swords, Wind, Crosshair, User } from 'lucide-react';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Unit, Team, UnitComposition } from '@/lib/types';
 import { moveUnit } from '@/app/actions';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
+import { Progress } from '@/components/ui/progress';
 
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
@@ -32,6 +33,59 @@ type GameMapProps = {
     otherUnits: Unit[];
     teams: { [key: string]: Team };
 };
+
+const UnitDisplay = ({ unit, isPlayerUnit, team }: { unit: Unit; isPlayerUnit: boolean, team: Team }) => {
+    const ClassIcon = classIcons[unit.type];
+    const RoleIcon = compositionIcons[unit.composition];
+    
+    let glowClass = '';
+    if (isPlayerUnit) {
+        glowClass = 'shadow-[0_0_12px_3px_rgba(107,225,255,0.8)]'; // Bright Green/Cyan glow for player's own units
+    } else if (unit.teamId === 'blue') {
+        glowClass = 'shadow-[0_0_10px_2px_rgba(37,99,235,0.6)]'; // Blue glow
+    } else {
+        glowClass = 'shadow-[0_0_10px_2px_rgba(220,38,38,0.6)]'; // Red glow
+    }
+
+    const healthPercentage = (unit.stats.hp / unit.stats.maxHp) * 100;
+    const resourcePercentage = (unit.stats.resource / unit.stats.maxResource) * 100;
+
+    return (
+        <div className="relative flex flex-col items-center w-16">
+            {/* Unit Icon */}
+            <div className="relative w-12 h-12 cursor-pointer group">
+                <div className={cn(
+                    "absolute inset-0 rounded-full border-2 transition-all duration-300",
+                    isPlayerUnit ? "border-cyan-400" : team?.bgClass.replace('bg-', 'border-'),
+                    glowClass
+                )}>
+                    <div className="relative flex items-center justify-center w-full h-full">
+                        {ClassIcon && <ClassIcon className={cn("w-6 h-6", team?.textClass)} />}
+                    </div>
+                </div>
+                 <div className="absolute flex items-center justify-center w-5 h-5 border-2 rounded-full -top-1 -right-1 bg-card border-card-foreground/50">
+                    {RoleIcon && <RoleIcon className="w-3 h-3 text-foreground" />}
+                </div>
+            </div>
+
+            {/* Name and Health/Mana Bars */}
+            <div className="flex flex-col items-center w-full mt-2">
+                 <p className="px-2 py-0.5 text-xs font-bold rounded-full whitespace-nowrap bg-background/80 text-foreground">
+                    {unit.name}
+                </p>
+                <div className="w-full h-3 mt-1 overflow-hidden border rounded-full border-foreground/50 bg-black/50">
+                    <div className="h-1/2">
+                         <div className="h-full bg-green-500" style={{ width: `${healthPercentage}%` }} />
+                    </div>
+                     <div className="h-1/2">
+                        <div className="h-full bg-blue-500" style={{ width: `${resourcePercentage}%` }} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 
 export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps) {
     const searchParams = useSearchParams();
@@ -60,66 +114,20 @@ export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps
 
     }, [pseudo, playerUnits]);
 
-    const UnitIcon = ({ unit, isPlayerUnit }: { unit: Unit; isPlayerUnit: boolean }) => {
-        const ClassIcon = classIcons[unit.type];
-        const RoleIcon = compositionIcons[unit.composition];
-        
-        let glowClass = '';
-        if (isPlayerUnit) {
-            glowClass = 'shadow-[0_0_12px_3px_rgba(56,189,248,0.7)]'; // Light blue glow for player's own units
-        } else if (unit.teamId === 'blue') {
-            glowClass = 'shadow-[0_0_10px_2px_rgba(37,99,235,0.6)]'; // Blue glow
-        } else {
-            glowClass = 'shadow-[0_0_10px_2px_rgba(220,38,38,0.6)]'; // Red glow
-        }
-
-        return (
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className="relative w-12 h-12 cursor-pointer group">
-                        <div className={cn(
-                            "absolute inset-0 rounded-full border-2 transition-all duration-300",
-                            isPlayerUnit ? "border-sky-400" : teams[unit.teamId]?.bgClass.replace('bg-', 'border-'),
-                            glowClass
-                        )}>
-                            <div className="relative flex items-center justify-center w-full h-full">
-                                {ClassIcon && <ClassIcon className={cn("w-6 h-6", teams[unit.teamId]?.textClass)} />}
-                            </div>
-                        </div>
-
-                         <div className="absolute flex items-center justify-center w-5 h-5 border-2 rounded-full -top-1 -right-1 bg-card border-card-foreground/50">
-                            {RoleIcon && <RoleIcon className="w-3 h-3 text-foreground" />}
-                        </div>
-                        
-                        <div className="absolute w-full mt-1 text-center -bottom-6">
-                            <p className="px-2 py-0.5 text-xs rounded-full opacity-0 whitespace-nowrap bg-background/80 text-foreground group-hover:opacity-100 transition-opacity">
-                                {unit.name}
-                            </p>
-                        </div>
-                    </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p className="font-bold">{unit.name}</p>
-                    <p>Équipe: {teams[unit.teamId]?.name}</p>
-                    <p>Santé: {unit.stats.hp} / {unit.stats.maxHp}</p>
-                </TooltipContent>
-            </Tooltip>
-        );
-    }
 
     return (
         <TooltipProvider>
             <div
-                className="relative overflow-hidden border-2 rounded-lg shadow-2xl border-primary bg-muted"
-                style={{ width: 1200, height: 1200 }} 
+                className="relative w-full h-full overflow-hidden bg-muted"
             >
                 <Image
                     src="https://picsum.photos/seed/map/2048/2048"
                     alt="Game Map"
                     layout="fill"
                     objectFit="cover"
-                    className="opacity-50"
+                    className="opacity-50 pointer-events-none select-none"
                     data-ai-hint="fantasy map"
+                    priority
                 />
 
                 <AnimatePresence>
@@ -130,17 +138,19 @@ export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps
                             initial={{
                                 left: `${unit.position.x}%`,
                                 top: `${unit.position.y}%`,
-                                x: '-50%',
-                                y: '-50%',
                             }}
                             animate={{
                                 left: `${unit.position.x}%`,
                                 top: `${unit.position.y}%`,
                             }}
                             transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-                            className="absolute"
+                            className="absolute transform -translate-x-1/2 -translate-y-1/2"
                         >
-                            <UnitIcon unit={unit} isPlayerUnit={unit.control.controllerPlayerId === pseudo} />
+                            <UnitDisplay 
+                                unit={unit} 
+                                isPlayerUnit={unit.control.controllerPlayerId === pseudo} 
+                                team={teams[unit.teamId]}
+                            />
                         </motion.div>
                     ))}
                 </AnimatePresence>

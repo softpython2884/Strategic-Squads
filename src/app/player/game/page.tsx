@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 
 function GamePageLoading() {
     return (
-        <main className="flex flex-col items-center justify-center flex-1 p-4">
+        <main className="flex flex-col items-center justify-center flex-1 w-full h-full bg-background">
             <div className="flex flex-col items-center gap-4 text-muted-foreground">
                 <Loader2 className="w-12 h-12 animate-spin text-primary" />
                 <h1 className="text-2xl font-bold">Chargement de la partie...</h1>
