@@ -11,6 +11,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { type SquadUnit, type JoinGameInput } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import type { Hero } from '@/lib/types';
+import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
+
+const classIcons: { [key: string]: React.ElementType } = {
+  Blindé: ArmoredIcon,
+  Mage: MageIcon,
+  Valkyrie: ValkyrieIcon,
+  Archer: ArcherIcon,
+  Assassin: AssassinIcon,
+};
 
 
 export default function PlayerDashboardContent() {
@@ -61,13 +70,13 @@ export default function PlayerDashboardContent() {
     setIsModalOpen(true);
   };
 
-  const handleSelectUnit = (hero: Hero, unitName: string) => {
+  const handleSelectUnit = (hero: Hero) => {
     if (editingSlot === null) return;
     
     const newUnit: SquadUnit = {
-      id: hero.id, // Use hero ID for the unit ID base
-      name: unitName,
-      type: hero.name, // The "type" is now the hero's name
+      id: hero.id,
+      name: hero.name,
+      type: hero.class, // The "type" is now the hero's class
     };
     
     const newSquad = [...squad];
@@ -138,14 +147,36 @@ export default function PlayerDashboardContent() {
     }));
   }
 
+  const UnitCard = ({ unit, onRemove }: { unit: SquadUnit, onRemove: () => void }) => {
+    const Icon = classIcons[unit.type];
+    return (
+      <div className="flex flex-col items-center w-full h-full text-center">
+        <div className="relative mb-2">
+            <Avatar className="w-16 h-16">
+                <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.id}`} />
+                <AvatarFallback>{unit.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            {Icon && (
+                <div className="absolute top-0 right-0 flex items-center justify-center w-6 h-6 border-2 rounded-full bg-muted border-background">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                </div>
+            )}
+        </div>
+        <p className="font-bold">{unit.name}</p>
+        <p className="text-sm text-muted-foreground">{unit.type}</p>
+        <Button variant="ghost" size="icon" className="mt-auto text-destructive/70 hover:text-destructive" onClick={onRemove}>
+            <XSquare />
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <main className="flex-1 p-4 md:p-6 lg:p-8">
       <UnitSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelect={handleSelectUnit}
-        pseudo={pseudo ?? ''}
-        slotIndex={editingSlot}
         squadType={squadType}
       />
       <h1 className="mb-4 text-3xl font-bold font-headline">Tableau de Bord de l'Escouade</h1>
@@ -166,17 +197,7 @@ export default function PlayerDashboardContent() {
             {squad.map((unit, index) => (
               <Card key={index} className="flex flex-col items-center justify-between min-h-[200px] p-4 bg-muted/30 border-dashed">
                 {unit ? (
-                  <div className="flex flex-col items-center w-full h-full text-center">
-                    <Avatar className="w-16 h-16 mb-2">
-                        <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.id}`} />
-                        <AvatarFallback>{unit.type.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <p className="font-bold">{unit.name}</p>
-                    <p className="text-sm text-muted-foreground">{unit.type}</p>
-                    <Button variant="ghost" size="icon" className="mt-auto text-destructive/70 hover:text-destructive" onClick={() => handleRemoveUnit(index)}>
-                        <XSquare />
-                    </Button>
-                  </div>
+                  <UnitCard unit={unit} onRemove={() => handleRemoveUnit(index)} />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-center text-muted-foreground">
                      <p className="mb-2">Emplacement {index + 1}</p>

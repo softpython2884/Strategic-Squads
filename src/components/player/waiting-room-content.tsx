@@ -10,6 +10,16 @@ import { cn } from "@/lib/utils"
 import { Shield, Swords, Crosshair, Wind, User, Loader2, Play, Users } from 'lucide-react';
 import type { Unit, Team } from "@/lib/types"
 import { Button } from "@/components/ui/button"
+import { HEROES_DATA } from "@/lib/heroes"
+import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
+
+const classIcons: { [key: string]: React.ElementType } = {
+  Blindé: ArmoredIcon,
+  Mage: MageIcon,
+  Valkyrie: ValkyrieIcon,
+  Archer: ArcherIcon,
+  Assassin: AssassinIcon,
+};
 
 const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
   attaque: <Swords className="w-4 h-4" />,
@@ -24,40 +34,59 @@ type PlayerSquad = {
     composition: Unit['composition'];
 }
 
-const PlayerCard = ({ player, team, isCurrentUser }: { player: PlayerSquad, team: Team, isCurrentUser: boolean }) => (
-    <Card className={cn(
-      "overflow-hidden transition-all duration-300",
-      isCurrentUser ? "border-primary shadow-lg" : "bg-card/60 hover:shadow-md"
-    )}>
-        <CardHeader className={cn("p-4", team.bgClass, team.textClass)}>
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <User className="w-6 h-6" />
-                    <CardTitle className="text-xl">{player.playerId}</CardTitle>
-                </div>
-                <Badge variant="secondary" className="flex items-center gap-2">
-                    {compositionIcons[player.composition]}
-                    <span className="capitalize">{player.composition}</span>
-                </Badge>
-            </div>
-        </CardHeader>
-        <CardContent className="p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground">Héros de l'escouade :</h4>
-            {player.squadUnits.map(unit => (
-                <div key={unit.id} className="flex items-center gap-4 p-2 rounded-md bg-muted/30">
+const PlayerCard = ({ player, team, isCurrentUser }: { player: PlayerSquad, team: Team, isCurrentUser: boolean }) => {
+    
+    const UnitDisplay = ({ unit }: { unit: Unit }) => {
+        const hero = HEROES_DATA.find(h => h.id === unit.heroId);
+        const Icon = hero ? classIcons[hero.class] : null;
+
+        return (
+             <div className="flex items-center gap-4 p-2 rounded-md bg-muted/30">
+                <div className="relative">
                     <Avatar className="w-10 h-10">
                         <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.heroId}`} alt={unit.name} />
                         <AvatarFallback>{unit.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold">{unit.name}</p>
-                        <p className="text-sm text-muted-foreground">{unit.type}</p>
-                    </div>
+                     {Icon && (
+                        <div className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 border rounded-full bg-muted border-background">
+                            <Icon className="w-2 h-2 text-muted-foreground" />
+                        </div>
+                    )}
                 </div>
-            ))}
-        </CardContent>
-    </Card>
-);
+                <div className="flex-1">
+                    <p className="font-semibold">{unit.name}</p>
+                    <p className="text-sm text-muted-foreground">{hero?.class}</p>
+                </div>
+            </div>
+        )
+    };
+
+    return (
+        <Card className={cn(
+        "overflow-hidden transition-all duration-300",
+        isCurrentUser ? "border-primary shadow-lg" : "bg-card/60 hover:shadow-md"
+        )}>
+            <CardHeader className={cn("p-4", team.bgClass, team.textClass)}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <User className="w-6 h-6" />
+                        <CardTitle className="text-xl">{player.playerId}</CardTitle>
+                    </div>
+                    <Badge variant="secondary" className="flex items-center gap-2">
+                        {compositionIcons[player.composition]}
+                        <span className="capitalize">{player.composition}</span>
+                    </Badge>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground">Héros de l'escouade :</h4>
+                {player.squadUnits.map(unit => (
+                    <UnitDisplay key={unit.id} unit={unit} />
+                ))}
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function WaitingRoomContent() {
     const router = useRouter();

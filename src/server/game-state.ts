@@ -98,8 +98,8 @@ export const gameState = {
 
         const newUnit: Unit = {
             id: `${input.pseudo}-${heroData.id}-${index}`, // More unique ID
-            name: squadUnit.name,
-            type: heroData.name, // The "type" is now the hero's name.
+            name: heroData.name, // The name is now the hero's name
+            type: heroData.class, // The "type" is the hero's class
             heroId: heroData.id,
             teamId: input.teamId,
             composition: input.squadType,
