@@ -75,8 +75,28 @@ let damageMultiplier = 1;
 
 // Function to calculate distance between two units
 const calculateDistance = (unitA: Unit, unitB: Unit): number => {
-    return Math.sqrt(Math.pow(unitA.position.x - unitB.position.x, 2) + Math.pow(unitA.position.y - unitB.position.y, 2));
+    // A simple approximation for distance calculation
+    const dx = unitA.position.x - unitB.position.x;
+    const dy = unitA.position.y - unitB.position.y;
+    return Math.sqrt(dx * dx + dy * dy);
 };
+
+// Function to apply damage from an attacker to a defender
+const applyDamage = (attacker: Unit, defender: Unit) => {
+    const totalDamage = Math.max(0, (attacker.stats.atk * damageMultiplier) - defender.stats.def);
+    defender.stats.hp = Math.max(0, defender.stats.hp - totalDamage);
+    
+    // console.log(`${attacker.name} attacked ${defender.name} for ${totalDamage} damage. ${defender.name} HP: ${defender.stats.hp}`);
+
+    if (defender.stats.hp <= 0) {
+        defender.combat.status = 'down';
+        defender.control.focus = undefined; // Stop attacking when down
+        console.log(`${defender.name} has been defeated.`);
+        // Here you could grant XP to the attacker
+        gameState.grantXp(attacker.id, 50); // Grant 50 xp for a kill
+    }
+}
+
 
 export const gameState = {
   getUnits: () => liveUnits,
@@ -136,6 +156,7 @@ export const gameState = {
             },
             combat: {
                 cooldowns: {},
+                attackCooldown: 0,
                 buffs: [],
                 debuffs: [],
                 status: 'alive',
@@ -168,14 +189,13 @@ export const gameState = {
 
   setPlayerAttackFocus: (playerId: string, targetId: string | null, position: {x: number, y: number}) => {
     const playerUnits = liveUnits.filter(u => u.control.controllerPlayerId === playerId);
-    const targetUnit = targetId ? liveUnits.find(u => u.id === targetId) : null;
 
     if (playerUnits.length === 0) return;
 
     for (const unit of playerUnits) {
+        if (unit.combat.status !== 'alive') continue; // Dead units can't attack
         // Update the focus to the new target ID
         unit.control.focus = targetId || undefined;
-        // The movement towards the target will be handled in the game loop
     }
 
     console.log(`Player ${playerId} assigned focus to ${targetId || 'a position'}.`);
@@ -184,6 +204,7 @@ export const gameState = {
   grantXp: (unitId: string, amount: number) => {
     liveUnits = liveUnits.map(unit => {
       if (unit.id === unitId) {
+        if (unit.combat.status !== 'alive') return unit; // Don't grant XP to dead units
         const newProgression = { ...unit.progression };
         newProgression.xp += amount;
 
@@ -191,6 +212,11 @@ export const gameState = {
           newProgression.level++;
           newProgression.xp -= newProgression.xpToNextLevel;
           newProgression.xpToNextLevel = Math.floor(newProgression.xpToNextLevel * 1.5); // Example: increase XP needed for next level
+           // Also increase stats on level up
+            unit.stats.maxHp = Math.floor(unit.stats.maxHp * 1.1);
+            unit.stats.hp = unit.stats.maxHp; // Heal to full on level up
+            unit.stats.atk = Math.floor(unit.stats.atk * 1.1);
+            unit.stats.def = Math.floor(unit.stats.def * 1.1);
         }
         return { ...unit, progression: newProgression };
       }
@@ -219,37 +245,48 @@ export const gameState = {
   },
   
   processCooldowns: () => {
-    const TICK_INTERVAL_S = 1; // Corresponds to game-loop.ts TICK_RATE_MS
+    const TICK_INTERVAL_S = 1; // Corresponds to game-loop.ts, runs once per second
     liveUnits = liveUnits.map(unit => {
-      const newCooldowns = { ...unit.combat.cooldowns };
-      let hasChanged = false;
-      for (const skillId in newCooldowns) {
-        if (newCooldowns[skillId] > 0) {
-          newCooldowns[skillId] = Math.max(0, newCooldowns[skillId] - TICK_INTERVAL_S);
-          hasChanged = true;
+        let hasChanged = false;
+
+        // Process skill cooldowns
+        const newCooldowns = { ...unit.combat.cooldowns };
+        for (const skillId in newCooldowns) {
+            if (newCooldowns[skillId] > 0) {
+                newCooldowns[skillId] = Math.max(0, newCooldowns[skillId] - TICK_INTERVAL_S);
+                hasChanged = true;
+            }
         }
-      }
-      if (hasChanged) {
-        return { ...unit, combat: { ...unit.combat, cooldowns: newCooldowns } };
-      }
-      return unit;
+        
+        // Process attack cooldown
+        let newAttackCooldown = unit.combat.attackCooldown;
+        if (newAttackCooldown > 0) {
+            newAttackCooldown = Math.max(0, newAttackCooldown - TICK_INTERVAL_S);
+            hasChanged = true;
+        }
+
+        if (hasChanged) {
+            return { ...unit, combat: { ...unit.combat, cooldowns: newCooldowns, attackCooldown: newAttackCooldown } };
+        }
+        return unit;
     });
   },
 
   processUnitActions: () => {
     if (!isGameStarted) return;
     
-    // This is where auto-attacking and ability usage would go.
-    // For now, let's just handle movement towards focused targets.
     liveUnits = liveUnits.map(unit => {
+      if (unit.combat.status !== 'alive') return unit; // Skip dead/down units
+      
       if (unit.control.focus) {
         const target = liveUnits.find(u => u.id === unit.control.focus);
-        if (target) {
-            // This is a simplified movement logic. A real game would use pathfinding.
+        if (target && target.combat.status === 'alive') {
             const distance = calculateDistance(unit, target);
-            const attackRange = 5; // Simplified attack range for all units
+            const attackRange = 10; // Simplified attack range for all units
+            const attackSpeed = unit.stats.spd; // Attacks per second
 
             if (distance > attackRange) {
+                // Move towards target
                 const speed = 1; // Simplified speed (units per tick)
                 const dx = target.position.x - unit.position.x;
                 const dy = target.position.y - unit.position.y;
@@ -264,10 +301,15 @@ export const gameState = {
                     }
                 }
             } else {
-                // Unit is in range, logic to attack would go here.
+                // In range, let's attack
+                if (unit.combat.attackCooldown <= 0) {
+                    applyDamage(unit, target);
+                    // Reset attack cooldown based on attack speed
+                    unit.combat.attackCooldown = 1 / attackSpeed;
+                }
             }
         } else {
-            // Target is gone, clear focus
+            // Target is gone or dead, clear focus
             return { ...unit, control: { ...unit.control, focus: undefined } };
         }
       }
@@ -283,7 +325,7 @@ export const gameState = {
     
     const elapsedTime = GAME_DURATION_SECONDS - gameTime;
     
-    // After 25 mins (i.e. timer is at 0 and goes into negative)
+    // After 25 mins
     if (elapsedTime >= (25 * 60) && elapsedTime < (30 * 60)) {
         if (damageMultiplier !== 2) {
             console.log("Game time > 25 mins. Damage multiplier is now x2.");
@@ -301,7 +343,7 @@ export const gameState = {
 
   reset: () => {
     // Deep copy to avoid mutation issues on subsequent resets
-    liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {} }, progression: {...u.progression}}))];
+    liveUnits = [...initialUnits.map(u => ({...u, combat: { ...u.combat, cooldowns: {}, attackCooldown: 0 }, progression: {...u.progression}}))];
     liveTeams = {...teams};
     isGameStarted = false;
     gameTime = GAME_DURATION_SECONDS;
@@ -309,5 +351,3 @@ export const gameState = {
     console.log('Game state has been reset.');
   }
 };
-
-    
