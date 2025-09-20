@@ -132,6 +132,11 @@ export default function GameMap({
     const [isPanning, setIsPanning] = useState(false);
     const lastMousePosition = useRef({ x: 0, y: 0 });
 
+    const cameraStateRef = useRef({ zoom, cameraPosition });
+    useEffect(() => {
+        cameraStateRef.current = { zoom, cameraPosition };
+    }, [zoom, cameraPosition]);
+
     const handleInteraction = useCallback((event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
         if (isBoxSelecting || isInteractingRef.current || isPanning) return;
         isInteractingRef.current = true;
@@ -142,11 +147,14 @@ export default function GameMap({
             return;
         }
         
+        const currentZoom = cameraStateRef.current.zoom;
+        const currentCameraPos = cameraStateRef.current.cameraPosition;
+
         const viewX = event.clientX - mapRect.left;
         const viewY = event.clientY - mapRect.top;
 
-        const worldX = (viewX / zoom) + (cameraPosition.x - (mapRect.width / 2) / zoom);
-        const worldY = (viewY / zoom) + (cameraPosition.y - (mapRect.height / 2) / zoom);
+        const worldX = (viewX / currentZoom) + (currentCameraPos.x - (mapRect.width / 2) / currentZoom);
+        const worldY = (viewY / currentZoom) + (currentCameraPos.y - (mapRect.height / 2) / currentZoom);
         
         const targetX = (worldX / mapDimensions.width) * 100;
         const targetY = (worldY / mapDimensions.height) * 100;
@@ -173,25 +181,27 @@ export default function GameMap({
         
         setTimeout(() => { isInteractingRef.current = false; }, 100);
 
-    }, [isBoxSelecting, zoom, cameraPosition, mapDimensions, units, onPing, onAttack, onMove, playerUnits, isPanning]);
+    }, [isBoxSelecting, mapDimensions, units, onPing, onAttack, onMove, playerUnits, isPanning]);
 
-    // Manual event listener for wheel to set passive: false - TEMPORARILY DISABLED
-    // useEffect(() => {
-    //     const mapEl = mapContainerRef.current;
-    //     if (!mapEl) return;
+    // Manual event listener for wheel to set passive: false
+    useEffect(() => {
+        const mapEl = mapContainerRef.current;
+        if (!mapEl) return;
 
-    //     const handleWheel = (event: WheelEvent) => {
-    //         event.preventDefault();
-    //         const newZoom = zoom - event.deltaY * 0.001;
-    //         onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
-    //     };
+        const handleWheel = (event: WheelEvent) => {
+            event.preventDefault();
+            const newZoom = zoom - event.deltaY * 0.001;
+            onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
+        };
 
-    //     mapEl.addEventListener('wheel', handleWheel, { passive: false });
+        mapEl.addEventListener('wheel', handleWheel, { passive: false });
         
-    //     return () => {
-    //         mapEl.removeEventListener('wheel', handleWheel);
-    //     };
-    // }, [zoom, onZoomChange]);
+        return () => {
+            if (mapEl) {
+              mapEl.removeEventListener('wheel', handleWheel);
+            }
+        };
+    }, [zoom, onZoomChange]);
     
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {

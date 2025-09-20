@@ -143,7 +143,11 @@ export default function GamePageContent() {
 
     useEffect(() => {
         const startPanning = (x: number, y: number) => {
+            if (panIntervalRef.current && lastPanDirection.current.x === x && lastPanDirection.current.y === y) {
+                return; // Already panning in this direction
+            }
             if (panIntervalRef.current) clearInterval(panIntervalRef.current);
+            
             lastPanDirection.current = { x, y };
             panIntervalRef.current = setInterval(() => {
                 handleCameraPan({ x: lastPanDirection.current.x, y: lastPanDirection.current.y });
@@ -172,9 +176,7 @@ export default function GamePageContent() {
             else if (e.clientY > window.innerHeight - edgeSize) panY = panSpeed;
             
             if (panX !== 0 || panY !== 0) {
-                 if (!panIntervalRef.current || panX !== lastPanDirection.current.x || panY !== lastPanDirection.current.y) {
-                    startPanning(panX, panY);
-                }
+                 startPanning(panX, panY);
             } else {
                 stopPanning();
             }
