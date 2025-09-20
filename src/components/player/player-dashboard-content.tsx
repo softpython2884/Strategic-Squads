@@ -10,6 +10,7 @@ import { UnitSelectionModal } from '@/components/player/unit-selection-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { type SquadUnit, type JoinGameInput } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import type { Hero } from '@/lib/types';
 
 
 export default function PlayerDashboardContent() {
@@ -60,13 +61,13 @@ export default function PlayerDashboardContent() {
     setIsModalOpen(true);
   };
 
-  const handleSelectUnit = (unitType: string, unitName: string) => {
+  const handleSelectUnit = (hero: Hero, unitName: string) => {
     if (editingSlot === null) return;
     
     const newUnit: SquadUnit = {
-      id: `unit_${pseudo}_${editingSlot}`,
+      id: hero.id, // Use hero ID for the unit ID base
       name: unitName,
-      type: unitType,
+      type: hero.name, // The "type" is now the hero's name
     };
     
     const newSquad = [...squad];
@@ -145,6 +146,7 @@ export default function PlayerDashboardContent() {
         onSelect={handleSelectUnit}
         pseudo={pseudo ?? ''}
         slotIndex={editingSlot}
+        squadType={squadType}
       />
       <h1 className="mb-4 text-3xl font-bold font-headline">Tableau de Bord de l'Escouade</h1>
       <p className="mb-8 text-lg text-muted-foreground">
@@ -156,7 +158,7 @@ export default function PlayerDashboardContent() {
         <CardHeader>
           <CardTitle>Gestion de l'Escouade</CardTitle>
           <CardDescription>
-            Composez votre escouade de 4 unités. Les types disponibles sont : Mage, Valkyrie, Blindé, et Archer.
+            Composez votre escouade de 4 héros.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -166,7 +168,7 @@ export default function PlayerDashboardContent() {
                 {unit ? (
                   <div className="flex flex-col items-center w-full h-full text-center">
                     <Avatar className="w-16 h-16 mb-2">
-                        <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.type}`} />
+                        <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.id}`} />
                         <AvatarFallback>{unit.type.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <p className="font-bold">{unit.name}</p>
@@ -180,7 +182,7 @@ export default function PlayerDashboardContent() {
                      <p className="mb-2">Emplacement {index + 1}</p>
                     <Button variant="outline" onClick={() => handleOpenModal(index)}>
                       <UserPlus className="mr-2" />
-                      Choisir l'unité
+                      Choisir un Héros
                     </Button>
                   </div>
                 )}

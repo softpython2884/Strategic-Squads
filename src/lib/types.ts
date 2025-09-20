@@ -1,13 +1,42 @@
 
+
 export type UnitComposition = 'attaque' | 'défense' | 'capture' | 'escarmouche';
 
 export type UnitStatus = 'alive' | 'down' | 'dead';
+
+export type Skill = {
+  id: number;
+  name: string;
+  description: string;
+  damage: number;
+  cooldown: number;
+};
+
+export type Hero = {
+  id: string;
+  name: string;
+  class: 'Valkyrie' | 'Mage' | 'Blindé' | 'Archer' | 'Assassin';
+  skills: Skill[];
+  stats: {
+    hp: number;
+    maxHp: number;
+    resource: number;
+    maxResource: number;
+    atk: number;
+    def: number;
+    spd: number;
+  };
+  rarity: 'Commun' | 'Rare' | 'Epique' | 'Légendaire';
+  composition: UnitComposition;
+};
+
 
 export type Unit = {
   // Identity
   id: string;
   name: string;
   type: string; // e.g., 'Knight', 'Archer', 'Tower', 'Idol'
+  heroId: string; // ID of the hero this unit is based on
   teamId: 'blue' | 'red';
   
   // Role

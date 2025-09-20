@@ -1,5 +1,5 @@
 
-import { Shield, Wand, Feather, Mountain } from 'lucide-react';
+import { Shield, Wand, Feather, Mountain, Dna } from 'lucide-react';
 
 export const MageIcon = ({ className }: { className?: string }) => (
     <Wand className={className} />
@@ -15,4 +15,8 @@ export const ArmoredIcon = ({ className }: { className?: string }) => (
 
 export const ArcherIcon = ({ className }: { className?: string }) => (
     <Mountain className={className} />
+);
+
+export const AssassinIcon = ({ className }: { className?: string }) => (
+    <Dna className={className} />
 );

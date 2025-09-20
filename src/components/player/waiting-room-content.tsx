@@ -42,11 +42,11 @@ const PlayerCard = ({ player, team, isCurrentUser }: { player: PlayerSquad, team
             </div>
         </CardHeader>
         <CardContent className="p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-muted-foreground">Unités de l'escouade :</h4>
+            <h4 className="text-sm font-semibold text-muted-foreground">Héros de l'escouade :</h4>
             {player.squadUnits.map(unit => (
                 <div key={unit.id} className="flex items-center gap-4 p-2 rounded-md bg-muted/30">
                     <Avatar className="w-10 h-10">
-                        <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.type}`} alt={unit.name} />
+                        <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.heroId}`} alt={unit.name} />
                         <AvatarFallback>{unit.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
@@ -95,8 +95,8 @@ export default function WaitingRoomContent() {
 
         return () => {
             // Only close the connection when the component unmounts
-            if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-                // ws.current.close(); // Keep it open for navigation
+            if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
+                ws.current.close(); 
             }
         };
     }, [router]); 

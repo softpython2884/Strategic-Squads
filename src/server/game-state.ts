@@ -1,6 +1,7 @@
 
 import type { Unit, Team, UnitComposition } from '@/lib/types';
 import type { JoinGameInput, SquadUnit } from '@/app/actions';
+import { HEROES_DATA } from '@/lib/heroes';
 
 const teams: { [key: string]: Team } = {
   blue: {
@@ -68,21 +69,6 @@ let liveUnits: Unit[] = [...initialUnits.map(u => ({...u, combat: { ...u.combat,
 let liveTeams = {...teams};
 let isGameStarted = false;
 
-const getBaseStatsForUnitType = (type: string) => {
-    switch (type.toLowerCase()) {
-        case 'mage':
-            return { maxHp: 60, maxResource: 100, atk: 18, def: 3, spd: 6 };
-        case 'valkyrie':
-            return { maxHp: 85, maxResource: 50, atk: 15, def: 8, spd: 7 };
-        case 'armored':
-        case 'blindé':
-            return { maxHp: 120, maxResource: 30, atk: 10, def: 15, spd: 4 };
-        case 'archer':
-            return { maxHp: 70, maxResource: 60, atk: 12, def: 5, spd: 8 };
-        default:
-            return { maxHp: 100, maxResource: 50, atk: 10, def: 10, spd: 5 };
-    }
-}
 
 export const gameState = {
   getUnits: () => liveUnits,
@@ -104,18 +90,23 @@ export const gameState = {
     liveUnits = liveUnits.filter(u => u.control.controllerPlayerId !== input.pseudo);
 
     const newUnits: Unit[] = input.squad.map((squadUnit, index) => {
-        const baseStats = getBaseStatsForUnitType(squadUnit.type);
+        const heroData = HEROES_DATA.find(h => h.id === squadUnit.id);
+        if (!heroData) {
+            console.error(`Could not find hero data for id ${squadUnit.id}`);
+            return null;
+        }
+
         const newUnit: Unit = {
-            id: `${input.pseudo}-${squadUnit.type}-${index}`, // More unique ID
+            id: `${input.pseudo}-${heroData.id}-${index}`, // More unique ID
             name: squadUnit.name,
-            type: squadUnit.type,
+            type: heroData.name, // The "type" is now the hero's name.
+            heroId: heroData.id,
             teamId: input.teamId,
             composition: input.squadType,
             position: { x: Math.floor(Math.random() * 10) + 1, y: Math.floor(Math.random() * 10) + 1 }, // Random position for now
             stats: {
-                ...baseStats,
-                hp: baseStats.maxHp,
-                resource: baseStats.maxResource,
+                ...heroData.stats,
+                hp: heroData.stats.maxHp,
             },
             progression: {
                 xp: 0,
@@ -134,7 +125,7 @@ export const gameState = {
             },
         };
         return newUnit;
-    });
+    }).filter((u): u is Unit => u !== null);
 
     liveUnits.push(...newUnits);
     console.log(`Added ${newUnits.length} new units for player ${input.pseudo}. Total units: ${liveUnits.length}`);
