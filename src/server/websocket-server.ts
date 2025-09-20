@@ -18,9 +18,9 @@ type PingPayload = {
 
 type ServerAction = 
     | { type: 'joinGame', payload: JoinGameInput }
-    | { type: 'move', payload: { playerId: string, position: { x: number, y: number } } }
+    | { type: 'move', payload: { playerId: string, unitIds: string[], position: { x: number, y: number } } }
     | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
-    | { type: 'attack', payload: { playerId: string, targetId: string | null, position: {x: number, y: number} } }
+    | { type: 'attack', payload: { playerId: string, unitIds: string[], targetId: string | null, position: {x: number, y: number} } }
     | { type: 'startGame' }
     | { type: 'ping', payload: PingPayload };
 
@@ -41,19 +41,17 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             break;
         case 'move':
             console.log(`[Game Server] Handling move for player ${action.payload.playerId}`);
-            gameState.setPlayerMoveTarget(action.payload.playerId, action.payload.position);
+            gameState.setPlayerMoveTarget(action.payload.unitIds, action.payload.position);
             break;
         case 'attack':
             console.log(`[Game Server] Handling attack for player ${action.payload.playerId}`);
-            gameState.setPlayerAttackFocus(action.payload.playerId, action.payload.targetId, action.payload.position);
-            // The game loop will broadcast the state changes
+            gameState.setPlayerAttackFocus(action.payload.unitIds, action.payload.targetId, action.payload.position);
             break;
         case 'useSkill':
             console.log(`[Game Server] Handling useSkill for ${action.payload.unitId} from player ${action.payload.playerId}`);
             const skillUnit = gameState.getUnits().find(u => u.id === action.payload.unitId);
             if (skillUnit && skillUnit.control.controllerPlayerId === action.payload.playerId) {
                 gameState.useSkill(action.payload.unitId, action.payload.skillId);
-                // No broadcast needed here, game loop handles it
             } else {
                 console.log(`[Game Server] Invalid useSkill request for unit ${action.payload.unitId} by player ${action.payload.playerId}`);
             }
@@ -67,7 +65,6 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
             break;
         case 'ping':
             console.log(`[Game Server] Handling ping from ${action.payload.playerId}`);
-            // Pings are ephemeral, just broadcast them to everyone
             await broadcastPing(action.payload);
             break;
     }
@@ -108,7 +105,6 @@ export async function startWebSocketServer() {
     ws.on('message', (message) => {
       try {
         const action = JSON.parse(message.toString()) as ServerAction;
-        // console.log(`[Game Server] Received action from client: ${action.type}`);
         handleClientAction(action, ws);
       } catch (error) {
         console.error("Failed to parse message from client:", error);
@@ -178,15 +174,7 @@ async function broadcastPing(payload: PingPayload) {
     });
 }
 
-
-/**
- * A helper function to be called from Server Actions to pass a message
- * to the game server. THIS IS NOW DEPRECATED.
- * Clients should send messages directly via their WebSocket connection.
- */
 export async function broadcastActionToServer(action: ServerAction) {
-    // This is a bit of a hack for the server action to communicate with the WS server.
-    // The server action will now create its own WS client to send the message.
     const ws = new WebSocket(`ws://localhost:${WS_PORT}`);
     
     ws.on('open', () => {

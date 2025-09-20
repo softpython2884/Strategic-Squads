@@ -172,16 +172,16 @@ export const gameState = {
     console.log(`Added ${newUnits.length} new units for player ${input.pseudo}. Total units: ${liveUnits.length}`);
   },
   
-  setPlayerMoveTarget: (playerId: string, position: { x: number, y: number }) => {
+  setPlayerMoveTarget: (unitIds: string[], position: { x: number, y: number }) => {
      liveUnits = liveUnits.map(unit => {
-      if (unit.control.controllerPlayerId === playerId) {
-        if (unit.combat.status !== 'alive') return unit; // Dead units can't move
+      if (unitIds.includes(unit.id)) {
+        if (unit.combat.status !== 'alive') return unit;
         return {
             ...unit,
             control: {
                 ...unit.control,
                 moveTarget: position,
-                focus: undefined, // Moving cancels attacking
+                focus: undefined,
             }
         }
       }
@@ -189,23 +189,22 @@ export const gameState = {
     });
   },
 
-  setPlayerAttackFocus: (playerId: string, targetId: string | null, position: {x: number, y: number}) => {
+  setPlayerAttackFocus: (unitIds: string[], targetId: string | null, position: {x: number, y: number}) => {
     liveUnits = liveUnits.map(unit => {
-        if (unit.control.controllerPlayerId === playerId) {
-            if (unit.combat.status !== 'alive') return unit; // Dead units can't attack
+        if (unitIds.includes(unit.id)) {
+            if (unit.combat.status !== 'alive') return unit;
             return {
                 ...unit,
                 control: {
                     ...unit.control,
                     focus: targetId || undefined,
-                    // If no targetId, it's an attack-move command
                     moveTarget: targetId ? undefined : position,
                 }
             }
         }
         return unit;
     })
-    console.log(`Player ${playerId} assigned focus to ${targetId || 'a position'}.`);
+    console.log(`Units ${unitIds.join(', ')} assigned focus to ${targetId || 'a position'}.`);
   },
 
   grantXp: (unitId: string, amount: number) => {

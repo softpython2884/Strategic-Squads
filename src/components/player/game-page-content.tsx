@@ -11,7 +11,6 @@ import SkillBar from './hud/skill-bar';
 import MiniMap from './hud/mini-map';
 import ObjectivesPanel from './hud/objectives-panel';
 import GameTimer from './hud/game-timer';
-import { moveUnit } from '@/app/actions';
 import StrategicMapOverlay from './hud/strategic-map-overlay';
 import FogOfWar from './hud/fog-of-war';
 import { objectives } from '@/lib/objectives';
@@ -29,8 +28,8 @@ function GameMapLoading() {
 }
 
 const PING_DURATION_MS = 5000;
-const MAP_DIMENSIONS = { width: 2048, height: 2048 }; // World size in pixels
-const VISION_RADIUS = 15; // Percentage of map width/height
+const MAP_DIMENSIONS = { width: 2048, height: 2048 };
+const VISION_RADIUS = 15;
 
 export default function GamePageContent() {
     const searchParams = useSearchParams();
@@ -41,6 +40,7 @@ export default function GamePageContent() {
     const [gameTime, setGameTime] = useState(0);
     const [pings, setPings] = useState<Ping[]>([]);
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
+    const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
     
     // Camera state
     const [zoom, setZoom] = useState(1.0);
@@ -94,7 +94,6 @@ export default function GamePageContent() {
         }
     }, [units, pseudo]);
     
-    // Handle keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === ',') {
@@ -113,11 +112,10 @@ export default function GamePageContent() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isStrategicMapOpen, centerCameraOnSquad]);
 
-    // Handle camera edge panning
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
-            const edgeSize = 30; // pixels from the edge to start panning
-            const panSpeed = 15; // pixels per frame
+            const edgeSize = 30; 
+            const panSpeed = 15; 
             
             let panX = 0;
             let panY = 0;
@@ -134,7 +132,7 @@ export default function GamePageContent() {
                             x: Math.max(0, Math.min(MAP_DIMENSIONS.width, prev.x + panX)),
                             y: Math.max(0, Math.min(MAP_DIMENSIONS.height, prev.y + panY))
                         }));
-                    }, 16); // ~60fps
+                    }, 16); 
                 }
             } else {
                 if (panIntervalRef.current) {
@@ -180,34 +178,33 @@ export default function GamePageContent() {
 
     }, [pseudo]);
 
-    const handleMove = useCallback(async (coords: { x: number, y: number }) => {
-        if (!pseudo) return;
-        
-        const playerUnitsToMove = units.filter(u => u.control.controllerPlayerId === pseudo);
-        if (playerUnitsToMove.length === 0) return;
+    const handleMove = useCallback((coords: { x: number, y: number }) => {
+        if (!pseudo || selectedUnitIds.size === 0) return;
         
         ws.current?.send(JSON.stringify({
             type: 'move',
             payload: {
                 playerId: pseudo,
+                unitIds: Array.from(selectedUnitIds),
                 position: coords,
             }
         }));
-    }, [pseudo, units]);
+    }, [pseudo, selectedUnitIds]);
 
     const handleAttack = useCallback((target: Unit | null, coords: { x: number, y: number }) => {
-        if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
+        if (!pseudo || selectedUnitIds.size === 0 || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
         
         ws.current.send(JSON.stringify({
             type: 'attack',
             payload: {
                 playerId: pseudo,
+                unitIds: Array.from(selectedUnitIds),
                 targetId: target?.id || null,
                 position: coords
             }
         }));
 
-    }, [pseudo]);
+    }, [pseudo, selectedUnitIds]);
     
     const handleUseSkill = useCallback((unitId: string, skillId: string) => {
         if (!pseudo || !ws.current || ws.current.readyState !== WebSocket.OPEN) return;
@@ -223,13 +220,21 @@ export default function GamePageContent() {
         }));
     }, [pseudo]);
 
-    // --- FOG OF WAR LOGIC ---
+    const handleSelectUnit = useCallback((unitId: string | null) => {
+        setSelectedUnitIds(prev => {
+            const newSelection = new Set<string>();
+            if (unitId) {
+                newSelection.add(unitId);
+            }
+            return newSelection;
+        });
+    }, []);
+
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const playerTeamId = playerUnits[0]?.teamId;
     
     const visionSources = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.combat.status === 'alive').map(u => u.position) : [];
     
-    // Also add allied objectives to vision sources
     const alliedObjectives = objectives.filter(obj => obj.teamId === playerTeamId);
     visionSources.push(...alliedObjectives.map(o => o.position));
 
@@ -246,21 +251,21 @@ export default function GamePageContent() {
     }, [visionSources]);
 
     const otherUnits = units.filter(unit => {
-        // Exclude player's own units
         if (unit.control.controllerPlayerId === pseudo) {
             return false;
         }
-        // Always include allies
         if (unit.teamId === playerTeamId) {
             return true;
         }
-        // Include enemies only if they are visible
         return isVisible(unit.position);
     });
 
     const teamMates = playerTeamId ? units.filter(u => u.teamId === playerTeamId && u.control.controllerPlayerId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
-    const squadComposition = playerUnits[0]?.composition;
+    
+    const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
+    const unitsForSkillBar = selectedUnitIds.size > 0 ? selectedPlayerUnits : playerUnits;
+
 
     return (
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
@@ -272,15 +277,16 @@ export default function GamePageContent() {
                     pings={pings}
                     zoom={zoom}
                     cameraPosition={cameraPosition}
+                    selectedUnitIds={selectedUnitIds}
                     onZoomChange={setZoom}
                     onCameraPan={setCameraPosition}
                     onPing={handlePing}
                     onMove={handleMove}
                     onAttack={handleAttack}
+                    onSelectUnit={handleSelectUnit}
                 />
             </Suspense>
             
-            {/* HUD Elements */}
             <div className="absolute inset-0 z-10 pointer-events-none">
                 <FogOfWar 
                     visionSources={visionSources} 
@@ -291,7 +297,7 @@ export default function GamePageContent() {
                 />
                 <GameTimer remainingTime={gameTime} />
                 <TeamPanel teamMates={teamMates} teams={teams}/>
-                <ObjectivesPanel squadComposition={squadComposition} />
+                <ObjectivesPanel squadComposition={playerUnits[0]?.composition} />
                 <MiniMap 
                     units={units} 
                     teams={teams} 
@@ -300,10 +306,9 @@ export default function GamePageContent() {
                     onPing={handlePing}
                     playerTeam={currentPlayerTeam}
                 />
-                <SkillBar playerUnits={playerUnits} onUseSkill={handleUseSkill} />
+                <SkillBar playerUnits={unitsForSkillBar} onUseSkill={handleUseSkill} />
             </div>
 
-            {/* Strategic Map Overlay */}
             <StrategicMapOverlay
                 isOpen={isStrategicMapOpen}
                 onClose={() => setIsStrategicMapOpen(false)}
