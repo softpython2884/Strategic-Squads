@@ -103,7 +103,7 @@ export default function GamePageContent() {
              if (e.key === 'Escape' && isStrategicMapOpen) {
                 setIsStrategicMapOpen(false);
             }
-            if (e.key === ' ' || e.key === 'Tab') {
+            if (e.key === ' ' || e.key.toLowerCase() === 'tab') {
                 e.preventDefault();
                 centerCameraOnSquad();
             }
@@ -226,20 +226,31 @@ export default function GamePageContent() {
             
             if (isShiftHeld) {
                 if (unitId) {
-                    // Shift-clicking a unit: toggle its selection
                     if (newSelection.has(unitId)) {
                         newSelection.delete(unitId);
                     } else {
                         newSelection.add(unitId);
                     }
                 }
-                // If shift-clicking on ground, do nothing to the selection
             } else {
-                // Not holding shift: standard selection
                 newSelection.clear();
                 if (unitId) {
                     newSelection.add(unitId);
                 }
+            }
+            return newSelection;
+        });
+    }, []);
+    
+    const handleSelectUnits = useCallback((unitIds: string[], isShiftHeld: boolean) => {
+        setSelectedUnitIds(prev => {
+            const newSelection = new Set(prev);
+            
+            if (isShiftHeld) {
+                unitIds.forEach(id => newSelection.add(id));
+            } else {
+                newSelection.clear();
+                unitIds.forEach(id => newSelection.add(id));
             }
             return newSelection;
         });
@@ -279,7 +290,6 @@ export default function GamePageContent() {
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
-    // If units are selected, show their skills. Otherwise, show all player's units' skills.
     const unitsForSkillBar = selectedUnitIds.size > 0 ? selectedPlayerUnits : playerUnits;
 
 
@@ -300,6 +310,7 @@ export default function GamePageContent() {
                     onMove={handleMove}
                     onAttack={handleAttack}
                     onSelectUnit={handleSelectUnit}
+                    onSelectUnits={handleSelectUnits}
                 />
             </Suspense>
             

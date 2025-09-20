@@ -40,6 +40,7 @@ type GameMapProps = {
     onMove: (coords: { x: number, y: number }) => void;
     onAttack: (target: Unit | null, coords: { x: number, y: number }) => void;
     onSelectUnit: (unitId: string | null, isShiftHeld: boolean) => void;
+    onSelectUnits: (unitIds: string[], isShiftHeld: boolean) => void;
 };
 
 const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { unit: Unit; isPlayerUnit: boolean, team: Team, isTargeted: boolean, isSelected: boolean }) => {
@@ -114,11 +115,15 @@ export default function GameMap({
     onPing, 
     onMove, 
     onAttack,
-    onSelectUnit
+    onSelectUnit,
+    onSelectUnits
 }: GameMapProps) {
     const allUnits = [...playerUnits, ...otherUnits];
     const [targetedUnitId, setTargetedUnitId] = useState<string | null>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [dragEnd, setDragEnd] = useState({ x: 0, y: 0 });
 
     const handleInteraction = (event: React.MouseEvent<HTMLDivElement>, isContextMenu: boolean) => {
         event.preventDefault();
@@ -131,10 +136,10 @@ export default function GameMap({
 
         const worldX = (viewX / zoom) + (cameraPosition.x - mapRect.width / (2 * zoom));
         const worldY = (viewY / zoom) + (cameraPosition.y - mapRect.height / (2 * zoom));
-
-        const targetX = (worldX / (mapRect.width)) * 100;
-        const targetY = (worldY / (mapRect.height)) * 100;
         
+        const targetX = (worldX / 2048) * 100;
+        const targetY = (worldY / 2048) * 100;
+
         const clickedUnit = allUnits.find(unit => {
             const unitScreenX = (unit.position.x / 100) * 2048;
             const unitScreenY = (unit.position.y / 100) * 2048;
@@ -154,13 +159,14 @@ export default function GameMap({
                  setTimeout(() => setTargetedUnitId(null), 500);
             }
         } else {
-            const clickedPlayerUnit = playerUnits.find(u => u.id === clickedUnit?.id);
-            // Pass the unit ID and whether shift was held
-            onSelectUnit(clickedPlayerUnit?.id || null, event.shiftKey);
-            if (!clickedPlayerUnit) {
-                // If not clicking one of our own units, check if we're clicking nothing
-                if(!clickedUnit) {
-                    onMove({ x: targetX, y: targetY });
+            // This is a single click, not a drag, so handle single unit selection.
+            if (!isDragging) {
+                const clickedPlayerUnit = playerUnits.find(u => u.id === clickedUnit?.id);
+                onSelectUnit(clickedPlayerUnit?.id || null, event.shiftKey);
+                if (!clickedPlayerUnit) {
+                    if(!clickedUnit) {
+                        onMove({ x: targetX, y: targetY });
+                    }
                 }
             }
         }
@@ -172,6 +178,73 @@ export default function GameMap({
         onZoomChange(Math.max(0.8, Math.min(2.5, newZoom)));
     };
 
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.button !== 0) return; // Only handle left-clicks for dragging
+        
+        const mapRect = mapContainerRef.current?.getBoundingClientRect();
+        if (!mapRect) return;
+
+        setIsDragging(true);
+        const startPos = { x: e.clientX - mapRect.left, y: e.clientY - mapRect.top };
+        setDragStart(startPos);
+        setDragEnd(startPos);
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        const mapRect = mapContainerRef.current?.getBoundingClientRect();
+        if (!mapRect) return;
+
+        setDragEnd({ x: e.clientX - mapRect.left, y: e.clientY - mapRect.top });
+    };
+
+    const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        setIsDragging(false);
+
+        const mapRect = mapContainerRef.current?.getBoundingClientRect();
+        if (!mapRect) return;
+
+        const startX = Math.min(dragStart.x, dragEnd.x);
+        const startY = Math.min(dragStart.y, dragEnd.y);
+        const endX = Math.max(dragStart.x, dragEnd.x);
+        const endY = Math.max(dragStart.y, dragEnd.y);
+
+        // Don't register as a drag if the box is too small
+        if (endX - startX < 10 && endY - startY < 10) {
+            handleInteraction(e, false);
+            return;
+        }
+        
+        const selectedIds: string[] = [];
+        playerUnits.forEach(unit => {
+            // Convert unit world position to screen position
+            const unitScreenX = (unit.position.x / 100 * 2048 - (cameraPosition.x - mapRect.width / (2 * zoom))) * zoom;
+            const unitScreenY = (unit.position.y / 100 * 2048 - (cameraPosition.y - mapRect.height / (2 * zoom))) * zoom;
+
+            if (unitScreenX >= startX && unitScreenX <= endX && unitScreenY >= startY && unitScreenY <= endY) {
+                selectedIds.push(unit.id);
+            }
+        });
+        
+        onSelectUnits(selectedIds, e.shiftKey);
+    };
+
+    const SelectionBox = () => {
+        if (!isDragging) return null;
+        const x = Math.min(dragStart.x, dragEnd.x);
+        const y = Math.min(dragStart.y, dragEnd.y);
+        const width = Math.abs(dragStart.x - dragEnd.x);
+        const height = Math.abs(dragStart.y - dragEnd.y);
+
+        return (
+            <div 
+                className="absolute border-2 border-dashed border-cyan-400 bg-cyan-400/20 pointer-events-none"
+                style={{ left: x, top: y, width, height }}
+            />
+        );
+    };
+
 
     return (
         <TooltipProvider>
@@ -180,8 +253,10 @@ export default function GameMap({
                 className="relative w-full h-full overflow-hidden select-none bg-muted cursor-crosshair"
                 onContextMenu={(e) => e.preventDefault()}
                 onWheel={handleWheel}
-                onClick={(e) => handleInteraction(e, false)}
-                onContextMenu={(e) => handleInteraction(e, true)}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={() => setIsDragging(false)}
             >
                 <motion.div
                     className="relative w-[2048px] h-[2048px] origin-top-left"
@@ -244,7 +319,11 @@ export default function GameMap({
                         ))}
                     </AnimatePresence>
                 </motion.div>
+
+                <SelectionBox />
             </div>
         </TooltipProvider>
     );
 }
+
+    
