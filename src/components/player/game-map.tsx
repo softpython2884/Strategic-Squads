@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
@@ -92,40 +92,43 @@ export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps
     const pseudo = searchParams.get('pseudo');
     const allUnits = [...playerUnits, ...otherUnits];
 
-    // Example of client-side logic to trigger a move
-    useEffect(() => {
+    const handleMapClick = async (event: React.MouseEvent<HTMLDivElement>) => {
         if (!pseudo || playerUnits.length === 0) return;
 
-        const unitToMove = playerUnits[0];
-        
-        const handleRandomMove = async () => {
-            const newX = unitToMove.position.x + (Math.random() - 0.5) * 10;
-            const newY = unitToMove.position.y + (Math.random() - 0.5) * 10;
+        const mapRect = event.currentTarget.getBoundingClientRect();
+        const clickX = event.clientX - mapRect.left;
+        const clickY = event.clientY - mapRect.top;
 
-            try {
-                await moveUnit(pseudo, unitToMove.id, { x: newX, y: newY });
-            } catch (error) {
-                console.error("Failed to request unit move:", error);
-            }
-        };
-        
-        const interval = setInterval(handleRandomMove, 3000);
-        return () => clearInterval(interval);
+        const targetX = (clickX / mapRect.width) * 100;
+        const targetY = (clickY / mapRect.height) * 100;
 
-    }, [pseudo, playerUnits]);
+        console.log(`Map clicked at: (${targetX.toFixed(2)}%, ${targetY.toFixed(2)}%)`);
+
+        // For now, move all player units to the clicked location.
+        // Later, this will depend on which units are selected.
+        try {
+            const movePromises = playerUnits.map(unit => 
+                moveUnit(pseudo, unit.id, { x: targetX, y: targetY })
+            );
+            await Promise.all(movePromises);
+        } catch (error) {
+            console.error("Failed to request unit move:", error);
+        }
+    };
 
 
     return (
         <TooltipProvider>
             <div
-                className="relative w-full h-full overflow-hidden bg-muted"
+                className="relative w-full h-full overflow-hidden bg-muted select-none"
+                onClick={handleMapClick}
             >
                 <Image
                     src="https://picsum.photos/seed/map/2048/2048"
                     alt="Game Map"
                     layout="fill"
                     objectFit="cover"
-                    className="opacity-50 pointer-events-none select-none"
+                    className="opacity-50 pointer-events-none"
                     data-ai-hint="fantasy map"
                     priority
                 />
@@ -144,7 +147,7 @@ export default function GameMap({ playerUnits, otherUnits, teams }: GameMapProps
                                 top: `${unit.position.y}%`,
                             }}
                             transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-                            className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                            className="absolute transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                         >
                             <UnitDisplay 
                                 unit={unit} 
