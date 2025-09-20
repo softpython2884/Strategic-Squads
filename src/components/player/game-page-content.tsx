@@ -15,7 +15,7 @@ import GameTimer from './hud/game-timer';
 import StrategicMapOverlay from './hud/strategic-map-overlay';
 import FogOfWar from './hud/fog-of-war';
 import { objectives as staticObjectives } from '@/lib/objectives';
-
+import { MAP_WIDTH_IN_TILES, MAP_HEIGHT_IN_TILES, TILE_SIZE } from '@/lib/map-data';
 
 function GameMapLoading() {
     return (
@@ -44,25 +44,22 @@ export default function GamePageContent() {
     // Client-side state
     const [isStrategicMapOpen, setIsStrategicMapOpen] = useState(false);
     const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
-    const [mapDimensions, setMapDimensions] = useState<{ width: number, height: number } | null>(null);
+
+    // New static map dimensions from map-data
+    const mapDimensions = { 
+        width: MAP_WIDTH_IN_TILES * TILE_SIZE, 
+        height: MAP_HEIGHT_IN_TILES * TILE_SIZE 
+    };
     
-    // Camera state
+    // Camera state - center on map initially
     const [zoom, setZoom] = useState(1.0);
-    const [cameraPosition, setCameraPosition] = useState({ x: 1024, y: 1024 });
+    const [cameraPosition, setCameraPosition] = useState({ x: mapDimensions.width / 2, y: mapDimensions.height / 2 });
 
     const ws = useRef<WebSocket | null>(null);
     const panIntervalRef = useRef<number | null>(null);
 
     useEffect(() => {
-        fetch('/map.json')
-            .then(res => res.json())
-            .then(mapData => {
-                const newWidth = mapData.width * mapData.tilewidth;
-                const newHeight = mapData.height * mapData.tileheight;
-                setMapDimensions({ width: newWidth, height: newHeight });
-                setCameraPosition({ x: newWidth / 2, y: newHeight / 2 });
-            });
-
+        // Only establish WebSocket connection once
         if (!ws.current) {
             const wsUrl = `ws://${window.location.hostname}:8080`;
             const webSocket = new WebSocket(wsUrl);
@@ -93,16 +90,16 @@ export default function GamePageContent() {
             ws.current.onerror = (error) => console.error('GamePage WebSocket error:', error);
         }
 
+        // Cleanup on component unmount
         return () => {
             if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
               ws.current.close();
               ws.current = null;
             }
         };
-    }, []); // Empty dependency array ensures this effect runs only once on mount
+    }, []); // Empty dependency array ensures this runs only once
 
     const centerCameraOnSquad = useCallback(() => {
-        if (!mapDimensions) return;
         const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
         if (playerUnits.length > 0) {
             const avgX = playerUnits.reduce((sum, u) => sum + (u.position.x / 100 * mapDimensions.width), 0) / playerUnits.length;
@@ -130,7 +127,6 @@ export default function GamePageContent() {
     }, [isStrategicMapOpen, centerCameraOnSquad]);
 
     useEffect(() => {
-        if (!mapDimensions) return;
         const handleMouseMove = (e: MouseEvent) => {
             const edgeSize = 30; 
             const panSpeed = 15; 
@@ -317,10 +313,6 @@ export default function GamePageContent() {
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
     const unitsForSkillBar = selectedUnitIds.size > 0 ? selectedPlayerUnits : playerUnits;
     
-    if (!mapDimensions) {
-        return <GameMapLoading />;
-    }
-
     return (
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
             <Suspense fallback={<GameMapLoading />}>
@@ -371,8 +363,4 @@ export default function GamePageContent() {
                 units={units}
                 teams={teams}
                 pings={pings}
-                onPing={handlePing}
-            />
-        </main>
-    );
-}
+                onPing={handlePing

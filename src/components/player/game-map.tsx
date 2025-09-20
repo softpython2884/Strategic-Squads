@@ -8,9 +8,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Shield, Swords, Wind, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Unit, Team, UnitComposition, Ping } from '@/lib/types';
-import Image from 'next/image';
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
 import PingDisplay from './hud/ping-display';
+import SimpleMapRenderer from './simple-map-renderer';
 
 const classIcons: { [key: string]: React.ElementType } = {
   Blindé: ArmoredIcon,
@@ -274,7 +274,7 @@ export default function GameMap({
                     }}
                     transition={{ duration: 0.2, ease: "linear" }}
                 >
-                    <div className="absolute inset-0 w-full h-full bg-gray-900" />
+                    <SimpleMapRenderer />
 
                     <AnimatePresence>
                         {allUnits.map((unit) => (
@@ -316,11 +316,4 @@ export default function GameMap({
                                 <PingDisplay />
                             </div>
                         ))}
-                    </AnimatePresence>
-                </motion.div>
-
-                <SelectionBox />
-            </div>
-        </TooltipProvider>
-    );
-}
+                    </An

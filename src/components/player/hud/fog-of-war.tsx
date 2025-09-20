@@ -24,6 +24,7 @@ const FogOfWar = ({ visionSources, visionRadius, mapDimensions, zoom, cameraPosi
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
+    // Set canvas size to match the container (the entire screen)
     const { clientWidth, clientHeight } = container;
     canvas.width = clientWidth;
     canvas.height = clientHeight;
@@ -35,13 +36,15 @@ const FogOfWar = ({ visionSources, visionRadius, mapDimensions, zoom, cameraPosi
     // 2. "Cut out" the visible areas
     ctx.globalCompositeOperation = 'destination-out';
 
+    // This radius needs to be based on a consistent world dimension, like map width
     const radiusInPixels = (visionRadius / 100) * mapDimensions.width * zoom;
 
     visionSources.forEach(source => {
       // Convert world position (percentage) to screen position (pixels)
       const worldX = (source.x / 100) * mapDimensions.width;
       const worldY = (source.y / 100) * mapDimensions.height;
-
+      
+      // Calculate screen position based on camera
       const screenX = (worldX - cameraPosition.x) * zoom + clientWidth / 2;
       const screenY = (worldY - cameraPosition.y) * zoom + clientHeight / 2;
       
@@ -64,11 +67,6 @@ const FogOfWar = ({ visionSources, visionRadius, mapDimensions, zoom, cameraPosi
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0 w-screen h-screen pointer-events-none"
     >
       <canvas ref={canvasRef} className="w-full h-full" />
-    </div>
-  );
-};
-
-export default FogOfWar;
