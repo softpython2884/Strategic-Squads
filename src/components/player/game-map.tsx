@@ -52,15 +52,15 @@ const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { uni
     
     let glowClass = '';
     if (isPlayerUnit) {
-        glowClass = 'shadow-[0_0_12px_3px_rgba(107,225,255,0.8)]';
+        glowClass = 'shadow-[0_0_8px_2px_rgba(107,225,255,0.7)]';
     } else if (unit.teamId === 'blue') {
-        glowClass = 'shadow-[0_0_10px_2px_rgba(37,99,235,0.6)]'; // Blue glow
+        glowClass = 'shadow-[0_0_6px_1px_rgba(37,99,235,0.5)]'; // Blue glow
     } else {
-        glowClass = 'shadow-[0_0_10px_2px_rgba(220,38,38,0.6)]'; // Red glow
+        glowClass = 'shadow-[0_0_6px_1px_rgba(220,38,38,0.5)]'; // Red glow
     }
 
     if (isSelected) {
-        glowClass = 'shadow-[0_0_15px_4px_rgba(255,255,255,0.9)]'; // Bright white glow for selected
+        glowClass = 'shadow-[0_0_12px_3px_rgba(255,255,255,0.9)]'; // Bright white glow for selected
     }
 
 
@@ -68,30 +68,30 @@ const UnitDisplay = ({ unit, isPlayerUnit, team, isTargeted, isSelected }: { uni
     const resourcePercentage = (unit.stats.resource / unit.stats.maxResource) * 100;
 
     return (
-        <div className="relative flex flex-col items-center w-16">
+        <div className="relative flex flex-col items-center w-8">
             {/* Unit Icon */}
-            <div className="relative w-12 h-12 cursor-pointer group">
+            <div className="relative w-8 h-8 cursor-pointer group">
                  <div className={cn(
                     "absolute inset-0 rounded-full border-2 transition-all duration-300",
-                    isSelected ? "border-white border-4" : (isPlayerUnit ? "border-cyan-400" : (team?.bgClass ? team.bgClass.replace('bg-', 'border-') : 'border-gray-500')),
+                    isSelected ? "border-white border-2" : (isPlayerUnit ? "border-cyan-400" : (team?.bgClass ? team.bgClass.replace('bg-', 'border-') : 'border-gray-500')),
                     glowClass,
-                    isTargeted && "border-red-500 animate-pulse border-4"
+                    isTargeted && "border-red-500 animate-pulse border-2"
                 )}>
                     <div className="relative flex items-center justify-center w-full h-full">
-                        {ClassIcon && <ClassIcon className={cn("w-6 h-6", team?.textClass)} />}
+                        {ClassIcon && <ClassIcon className={cn("w-4 h-4", team?.textClass)} />}
                     </div>
                 </div>
-                 <div className="absolute flex items-center justify-center w-5 h-5 border-2 rounded-full -top-1 -right-1 bg-card border-card-foreground/50">
-                    {RoleIcon && <RoleIcon className="w-3 h-3 text-foreground" />}
+                 <div className="absolute flex items-center justify-center w-4 h-4 border rounded-full -top-1 -right-1 bg-card border-card-foreground/50">
+                    {RoleIcon && <RoleIcon className="w-2 h-2 text-foreground" />}
                 </div>
             </div>
 
             {/* Name and Health/Mana Bars */}
-            <div className="flex flex-col items-center w-full mt-2">
-                 <p className="px-2 py-0.5 text-xs font-bold rounded-full whitespace-nowrap bg-background/80 text-foreground">
+            <div className="flex flex-col items-center w-full mt-1">
+                 <p className="px-1 py-0 text-[8px] font-bold rounded-full whitespace-nowrap bg-background/80 text-foreground scale-90">
                     {unit.name}
                 </p>
-                <div className="w-full h-3 mt-1 overflow-hidden border rounded-full border-foreground/50 bg-black/50">
+                <div className="w-full h-2 mt-0.5 overflow-hidden border rounded-full border-foreground/50 bg-black/50">
                     <div className="h-1/2">
                          <div className="h-full bg-green-500" style={{ width: `${healthPercentage}%` }} />
                     </div>
@@ -148,7 +148,7 @@ export default function GameMap({
             const unitScreenX = (unit.position.x / 100) * mapDimensions.width;
             const unitScreenY = (unit.position.y / 100) * mapDimensions.height;
             const distance = Math.sqrt(Math.pow(worldX - unitScreenX, 2) + Math.pow(worldY - unitScreenY, 2));
-            return distance < 32;
+            return distance < 16; // Half of the new unit size (32px)
         });
 
         if (event.altKey) {
