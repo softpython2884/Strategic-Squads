@@ -182,14 +182,15 @@ export default function GamePageContent() {
         const playerUnitsToMove = units.filter(u => u.control.controllerPlayerId === pseudo);
         if (playerUnitsToMove.length === 0) return;
         
-        try {
-            const movePromises = playerUnitsToMove.map(unit => 
-                moveUnit(pseudo, unit.id, coords)
-            );
-            await Promise.all(movePromises);
-        } catch (error) {
-            console.error("Failed to request unit move:", error);
-        }
+        // This is a simplification. In a real game, you'd send one command
+        // and the server would handle moving all selected units.
+        ws.current?.send(JSON.stringify({
+            type: 'move',
+            payload: {
+                playerId: pseudo,
+                position: coords,
+            }
+        }));
     }, [pseudo, units]);
 
     const handleAttack = useCallback((target: Unit | null, coords: { x: number, y: number }) => {

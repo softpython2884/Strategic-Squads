@@ -81,6 +81,7 @@ export type Unit = {
   control: {
     controllerPlayerId?: string;
     focus?: string; // target entity id
+    moveTarget?: { x: number; y: number }; // target position for movement
   };
   
 };

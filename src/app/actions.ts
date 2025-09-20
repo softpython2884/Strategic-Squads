@@ -68,19 +68,3 @@ export async function useSkill(playerId: string, unitId: string, skillId: string
     throw new Error(`Failed to send useSkill action: ${error.message}`);
   }
 }
-
-export async function moveUnit(playerId: string, unitId: string, position: { x: number, y: number }): Promise<Unit | null> {
-    try {
-        // Broadcast this action to the game server
-        await broadcastActionToServer({
-            type: 'moveUnit',
-            payload: { playerId, unitId, position },
-        });
-        // The client will receive the update via WebSocket broadcast, so we don't need to return anything here.
-        return null;
-
-    } catch (error: any)        {
-        console.error("Error in moveUnit action:", error.message);
-        throw new Error(`Failed to send moveUnit action: ${error.message}`);
-    }
-}

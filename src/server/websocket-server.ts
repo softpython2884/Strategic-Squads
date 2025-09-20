@@ -18,7 +18,7 @@ type PingPayload = {
 
 type ServerAction = 
     | { type: 'joinGame', payload: JoinGameInput }
-    | { type: 'moveUnit', payload: { playerId: string, unitId: string, position: { x: number, y: number } } }
+    | { type: 'move', payload: { playerId: string, position: { x: number, y: number } } }
     | { type: 'useSkill', payload: { playerId: string, unitId: string, skillId: string } }
     | { type: 'attack', payload: { playerId: string, targetId: string | null, position: {x: number, y: number} } }
     | { type: 'startGame' }
@@ -39,13 +39,9 @@ async function handleClientAction(action: ServerAction, ws: WebSocket) {
                 await broadcastGameState(); 
             }
             break;
-        case 'moveUnit':
-            // console.log(`[Game Server] Handling moveUnit for ${action.payload.unitId}`);
-            const unit = gameState.getUnits().find(u => u.id === action.payload.unitId);
-            if (unit && unit.control.controllerPlayerId === action.payload.playerId) {
-                gameState.updateUnitPosition(action.payload.unitId, action.payload.position.x, action.payload.position.y);
-                // The game loop will broadcast the state, so we don't broadcast here to avoid extra messages
-            }
+        case 'move':
+            console.log(`[Game Server] Handling move for player ${action.payload.playerId}`);
+            gameState.setPlayerMoveTarget(action.payload.playerId, action.payload.position);
             break;
         case 'attack':
             console.log(`[Game Server] Handling attack for player ${action.payload.playerId}`);
@@ -203,5 +199,3 @@ export async function broadcastActionToServer(action: ServerAction) {
         console.error('[Server Action Client] Failed to connect or send action to WS:', err);
     });
 }
-
-    

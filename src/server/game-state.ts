@@ -73,11 +73,10 @@ let isGameStarted = false;
 let gameTime = GAME_DURATION_SECONDS; // Countdown timer
 let damageMultiplier = 1;
 
-// Function to calculate distance between two units
-const calculateDistance = (unitA: Unit, unitB: Unit): number => {
-    // A simple approximation for distance calculation
-    const dx = unitA.position.x - unitB.position.x;
-    const dy = unitA.position.y - unitB.position.y;
+// Function to calculate distance between two units or a unit and a point
+const calculateDistance = (posA: {x: number, y: number}, posB: {x: number, y: number}): number => {
+    const dx = posA.x - posB.x;
+    const dy = posA.y - posB.y;
     return Math.sqrt(dx * dx + dy * dy);
 };
 
@@ -91,6 +90,7 @@ const applyDamage = (attacker: Unit, defender: Unit) => {
     if (defender.stats.hp <= 0) {
         defender.combat.status = 'down';
         defender.control.focus = undefined; // Stop attacking when down
+        defender.control.moveTarget = undefined;
         console.log(`${defender.name} has been defeated.`);
         // Here you could grant XP to the attacker
         gameState.grantXp(attacker.id, 50); // Grant 50 xp for a kill
@@ -172,32 +172,39 @@ export const gameState = {
     console.log(`Added ${newUnits.length} new units for player ${input.pseudo}. Total units: ${liveUnits.length}`);
   },
   
-  updateUnitPosition: (unitId: string, x: number, y: number): Unit | undefined => {
-    let updatedUnit: Unit | undefined;
-    liveUnits = liveUnits.map(unit => {
-      if (unit.id === unitId) {
-        // Clamp position between 0 and 100
-        const clampedX = Math.max(0, Math.min(100, x));
-        const clampedY = Math.max(0, Math.min(100, y));
-        updatedUnit = { ...unit, position: { x: clampedX, y: clampedY } };
-        return updatedUnit;
+  setPlayerMoveTarget: (playerId: string, position: { x: number, y: number }) => {
+     liveUnits = liveUnits.map(unit => {
+      if (unit.control.controllerPlayerId === playerId) {
+        if (unit.combat.status !== 'alive') return unit; // Dead units can't move
+        return {
+            ...unit,
+            control: {
+                ...unit.control,
+                moveTarget: position,
+                focus: undefined, // Moving cancels attacking
+            }
+        }
       }
       return unit;
     });
-    return updatedUnit;
   },
 
   setPlayerAttackFocus: (playerId: string, targetId: string | null, position: {x: number, y: number}) => {
-    const playerUnits = liveUnits.filter(u => u.control.controllerPlayerId === playerId);
-
-    if (playerUnits.length === 0) return;
-
-    for (const unit of playerUnits) {
-        if (unit.combat.status !== 'alive') continue; // Dead units can't attack
-        // Update the focus to the new target ID
-        unit.control.focus = targetId || undefined;
-    }
-
+    liveUnits = liveUnits.map(unit => {
+        if (unit.control.controllerPlayerId === playerId) {
+            if (unit.combat.status !== 'alive') return unit; // Dead units can't attack
+            return {
+                ...unit,
+                control: {
+                    ...unit.control,
+                    focus: targetId || undefined,
+                    // If no targetId, it's an attack-move command
+                    moveTarget: targetId ? undefined : position,
+                }
+            }
+        }
+        return unit;
+    })
     console.log(`Player ${playerId} assigned focus to ${targetId || 'a position'}.`);
   },
 
@@ -304,41 +311,55 @@ export const gameState = {
     liveUnits = liveUnits.map(unit => {
       if (unit.combat.status !== 'alive') return unit; // Skip dead/down units
       
+      const speed = 1; // Simplified speed (units per tick)
+      const attackRange = 10; // Simplified attack range for all units
+
+      // 1. Handle explicit attack orders
       if (unit.control.focus) {
         const target = liveUnits.find(u => u.id === unit.control.focus);
         if (target && target.combat.status === 'alive') {
-            const distance = calculateDistance(unit, target);
-            const attackRange = 10; // Simplified attack range for all units
-            const attackSpeed = unit.stats.spd; // Attacks per second
-
-            if (distance > attackRange) {
+            const dist = calculateDistance(unit.position, target.position);
+            
+            if (dist > attackRange) {
                 // Move towards target
-                const speed = 1; // Simplified speed (units per tick)
                 const dx = target.position.x - unit.position.x;
                 const dy = target.position.y - unit.position.y;
-                const newX = unit.position.x + (dx / distance) * speed;
-                const newY = unit.position.y + (dy / distance) * speed;
-                
-                return {
-                    ...unit,
-                    position: {
-                        x: Math.max(0, Math.min(100, newX)),
-                        y: Math.max(0, Math.min(100, newY))
-                    }
-                }
+                unit.position.x += (dx / dist) * speed;
+                unit.position.y += (dy / dist) * speed;
             } else {
-                // In range, let's attack
+                // In range, attack
                 if (unit.combat.attackCooldown <= 0) {
                     applyDamage(unit, target);
-                    // Reset attack cooldown based on attack speed
-                    unit.combat.attackCooldown = 1 / attackSpeed;
+                    unit.combat.attackCooldown = 1 / unit.stats.spd; // Reset cooldown
                 }
+                unit.control.moveTarget = undefined; // Stop moving if in attack range
             }
         } else {
             // Target is gone or dead, clear focus
-            return { ...unit, control: { ...unit.control, focus: undefined } };
+            unit.control.focus = undefined;
         }
+      } 
+      // 2. Handle move orders (if no attack order)
+      else if (unit.control.moveTarget) {
+          const dist = calculateDistance(unit.position, unit.control.moveTarget);
+
+          if (dist > speed) {
+            const dx = unit.control.moveTarget.x - unit.position.x;
+            const dy = unit.control.moveTarget.y - unit.position.y;
+            unit.position.x += (dx / dist) * speed;
+            unit.position.y += (dy / dist) * speed;
+          } else {
+            // Arrived at destination
+            unit.position.x = unit.control.moveTarget.x;
+            unit.position.y = unit.control.moveTarget.y;
+            unit.control.moveTarget = undefined;
+          }
       }
+
+      // Clamp position between 0 and 100
+      unit.position.x = Math.max(0, Math.min(100, unit.position.x));
+      unit.position.y = Math.max(0, Math.min(100, unit.position.y));
+      
       return unit;
     })
 
