@@ -278,10 +278,6 @@ export default function GamePageContent() {
         });
     }, []);
 
-    if (!mapDimensions) {
-        return <GameMapLoading />;
-    }
-
     const playerUnits = pseudo ? units.filter(u => u.control.controllerPlayerId === pseudo) : [];
     const playerTeamId = playerUnits[0]?.teamId;
     
@@ -311,15 +307,19 @@ export default function GamePageContent() {
         }
         return isVisible(unit.position);
     });
-
+    
     const allPlayerTeamUnits = playerTeamId ? units.filter(u => u.teamId === playerTeamId) : [];
     const currentPlayerTeam = playerTeamId ? teams[playerTeamId] : null;
-    const visibleUnits = [...allPlayerTeamUnits, ...otherUnits.filter(u => u.teamId !== playerTeamId)];
 
+    // Corrected visible units for minimap
+    const visibleUnits = [...allPlayerTeamUnits, ...units.filter(u => u.teamId !== playerTeamId && isVisible(u.position))];
     
     const selectedPlayerUnits = playerUnits.filter(u => selectedUnitIds.has(u.id));
     const unitsForSkillBar = selectedUnitIds.size > 0 ? selectedPlayerUnits : playerUnits;
-
+    
+    if (!mapDimensions) {
+        return <GameMapLoading />;
+    }
 
     return (
         <main className="relative flex-1 w-full h-full overflow-hidden bg-black">
@@ -376,4 +376,3 @@ export default function GamePageContent() {
         </main>
     );
 }
-
