@@ -3,7 +3,7 @@
 
 import { implementAIUnitBehaviors, type AIUnitBehaviorsInput, type AIUnitBehaviorsOutput } from "@/ai/flows/implement-ai-unit-behaviors";
 import { summarizeGameEvents, type SummarizeGameEventsInput, type SummarizeGameEventsOutput } from "@/ai/flows/summarize-game-events";
-import { gameState } from "@/server/game-state";
+import { gameEngine } from "@/server/instance";
 import type { Unit, UnitComposition } from "@/lib/types";
 import { broadcastActionToServer, broadcastGameState } from "@/server/websocket-server";
 
@@ -56,13 +56,13 @@ export async function runSummarizeGameEvents(input: SummarizeGameEventsInput): P
 // This is now handled by WebSocket directly from the client in skill-bar.tsx
 export async function useSkill(playerId: string, unitId: string, skillId: string): Promise<boolean> {
   try {
-     // This function is becoming a passthrough to the WebSocket server,
-     // but the client should ideally send the message directly.
-     await broadcastActionToServer({
-        type: 'useSkill',
-        payload: { playerId, unitId, skillId },
-     });
-     return true; // Assume success, the server will broadcast the result
+    // This function is becoming a passthrough to the WebSocket server,
+    // but the client should ideally send the message directly.
+    await broadcastActionToServer({
+      type: 'useSkill',
+      payload: { playerId, unitId, skillId },
+    });
+    return true; // Assume success, the server will broadcast the result
   } catch (error: any) {
     console.error("Error in useSkill action:", error.message);
     throw new Error(`Failed to send useSkill action: ${error.message}`);
@@ -72,13 +72,13 @@ export async function useSkill(playerId: string, unitId: string, skillId: string
 
 // Server actions to safely access game state from client components
 export async function getGameEventsLog(): Promise<string> {
-    return gameState.getGameEventsLog();
+  return gameEngine.getGameEventsLog();
 }
 
 export async function getTeamResourceData(): Promise<any[]> {
-    return gameState.getTeamResourceData();
+  return gameEngine.getTeamResourceData();
 }
 
 export async function getUnitCompositionData(): Promise<any[]> {
-    return gameState.getUnitCompositionData();
+  return gameEngine.getUnitCompositionData();
 }

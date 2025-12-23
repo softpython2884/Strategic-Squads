@@ -6,33 +6,25 @@
  */
 'use server';
 
-import { gameState } from '@/server/game-state';
+import { gameEngine } from '@/server/instance';
 import { broadcastGameState } from './websocket-server';
 
-const TICK_RATE_MS = 250; // Update 4 times per second for smoother movement
+const TICK_RATE_MS = 250; // Update 4 times per second
 let gameLoopInterval: NodeJS.Timeout | null = null;
 let tickCount = 0;
 
 async function gameTick() {
   tickCount++;
-  // console.log(`Game Tick #${tickCount} at ${new Date().toISOString()}`);
 
-  if (tickCount % 4 === 0) { // Only process time-based logic once per second
-      // Process game time and associated logic (damage multipliers, etc.)
-      gameState.processGameTick();
+  if (tickCount % 4 === 0) { // Once per second
+    gameEngine.processGameTick();
   }
-  
-  // Process cooldowns every tick for more responsive UI feedback
-  gameState.processCooldowns();
-  
-  // Process unit actions like movement and targeting every tick
-  gameState.processUnitActions();
+
+  gameEngine.processCooldowns();
+  gameEngine.processUnitActions();
 
   // Broadcast the latest state to all clients
   await broadcastGameState();
-
-  // Future logic will go here:
-  // - Check for win/loss conditions
 }
 
 /**
@@ -44,8 +36,7 @@ export async function startGameLoop() {
     return;
   }
   console.log(`Starting game loop with a tick rate of ${TICK_RATE_MS}ms.`);
-  // This is the critical change: reset is called here, ONCE, when the loop starts.
-  gameState.reset(); 
+  gameEngine.reset();
   tickCount = 0;
   gameLoopInterval = setInterval(gameTick, TICK_RATE_MS);
 }
@@ -62,4 +53,3 @@ export async function stopGameLoop() {
     console.log('Game loop is not running.');
   }
 }
-

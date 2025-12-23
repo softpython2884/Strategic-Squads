@@ -30,7 +30,8 @@ export default function TeamSelectionPage() {
     const router = useRouter();
 
     const [units, setUnits] = useState<Unit[]>([]);
-    const [teams, setTeams] = useState<{[key: string]: any}>({});
+    const [teams, setTeams] = useState<{ [key: string]: any }>({});
+
 
     useEffect(() => {
         // Connect to WebSocket to get real-time game state for squad availability
@@ -56,7 +57,7 @@ export default function TeamSelectionPage() {
     }, []);
 
     const getSquadsAvailability = () => {
-        if (!teamId) return squadsConfig.map(s => ({...s, currentCount: 0, isAvailable: true}));
+        if (!teamId) return squadsConfig.map(s => ({ ...s, currentCount: 0, isAvailable: true }));
 
         return squadsConfig.map(squad => {
             // Count players in the selected team that have this squad composition
@@ -66,7 +67,7 @@ export default function TeamSelectionPage() {
                 // Get unique player IDs
                 .filter((value, index, self) => self.indexOf(value) === index)
                 .length;
-            
+
             const isAvailable = currentCount < squad.max;
             return {
                 ...squad,
@@ -83,10 +84,10 @@ export default function TeamSelectionPage() {
             setStep('squad');
         }
     }
-    
+
     const handleConfirm = () => {
         if (!pseudo || !teamId || !squadType) return;
-        
+
         const params = new URLSearchParams({
             pseudo,
             teamId,
@@ -100,7 +101,7 @@ export default function TeamSelectionPage() {
         switch (step) {
             case 'pseudo':
                 return (
-                     <Card className="w-full max-w-md mx-auto">
+                    <Card className="w-full max-w-md mx-auto">
                         <CardHeader>
                             <CardTitle className="text-2xl text-center">Entrez votre pseudonyme</CardTitle>
                             <CardDescription className="text-center">Ce sera le nom de votre groupe en jeu.</CardDescription>
@@ -108,11 +109,11 @@ export default function TeamSelectionPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="pseudo">Pseudonyme</Label>
-                                <Input 
-                                    id="pseudo" 
-                                    placeholder="Votre nom de joueur..." 
-                                    value={pseudo} 
-                                    onChange={(e) => setPseudo(e.target.value)} 
+                                <Input
+                                    id="pseudo"
+                                    placeholder="Votre nom de joueur..."
+                                    value={pseudo}
+                                    onChange={(e) => setPseudo(e.target.value)}
                                     autoFocus
                                     onKeyDown={(e) => e.key === 'Enter' && handleNext()}
                                 />
@@ -130,7 +131,7 @@ export default function TeamSelectionPage() {
                         <h2 className="mb-6 text-3xl font-bold text-center font-headline">Choisissez votre équipe</h2>
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                             {Object.entries(teams).map(([id, team]) => (
-                                <Card 
+                                <Card
                                     key={(team as any).name}
                                     className={cn(
                                         "text-center cursor-pointer transition-all duration-300 hover:shadow-lg",
@@ -150,23 +151,23 @@ export default function TeamSelectionPage() {
                             ))}
                         </div>
                         <div className="flex justify-center mt-8">
-                             <Button onClick={handleNext} disabled={!teamId} size="lg">
+                            <Button onClick={handleNext} disabled={!teamId} size="lg">
                                 Suivant <ChevronsRight className="ml-2" />
                             </Button>
                         </div>
                     </div>
                 );
-            
+
             case 'squad':
-                 const squadsAvailability = getSquadsAvailability();
-                 return (
+                const squadsAvailability = getSquadsAvailability();
+                return (
                     <div className="w-full max-w-5xl mx-auto">
                         <h2 className="mb-2 text-3xl font-bold text-center font-headline">Sélectionnez votre escouade</h2>
                         <p className="mb-6 text-center text-muted-foreground">Vous commanderez ce type d'escouade pour l'équipe {(teams as any)[teamId!]?.name}.</p>
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-                           {squadsAvailability.map(squad => (
-                                <Card 
-                                    key={squad.type} 
+                            {squadsAvailability.map(squad => (
+                                <Card
+                                    key={squad.type}
                                     className={cn(
                                         "flex flex-col text-center transition-all duration-300",
                                         squadType === squad.type && squad.isAvailable ? 'border-primary shadow-lg' : 'hover:shadow-lg hover:border-primary/50',
@@ -175,9 +176,9 @@ export default function TeamSelectionPage() {
                                     onClick={() => squad.isAvailable && setSquadType(squad.type)}
                                 >
                                     <CardHeader>
-                                        <squad.icon className={cn("w-12 h-12 mx-auto", !squad.isAvailable ? "text-muted-foreground": "text-primary")} />
+                                        <squad.icon className={cn("w-12 h-12 mx-auto", !squad.isAvailable ? "text-muted-foreground" : "text-primary")} />
                                         <CardTitle className="capitalize">
-                                            {squad.type}{' '} 
+                                            {squad.type}{' '}
                                             <span className="text-sm font-normal text-muted-foreground">
                                                 ({squad.currentCount}/{squad.max} pris)
                                             </span>
@@ -193,16 +194,16 @@ export default function TeamSelectionPage() {
                                         )}
                                     </CardContent>
                                 </Card>
-                           ))}
+                            ))}
                         </div>
                         <div className="flex justify-center mt-8">
                             <Button onClick={handleConfirm} size="lg" disabled={!squadType}>
-                                 <User className="mr-2" />
-                                 Confirmer et préparer l'escouade
+                                <User className="mr-2" />
+                                Confirmer et préparer l'escouade
                             </Button>
                         </div>
                     </div>
-                 );
+                );
         }
     }
 
@@ -220,7 +221,7 @@ export default function TeamSelectionPage() {
                     Équipe
                 </Button>
                 <ChevronsRight className="w-4 h-4" />
-                <Button variant="link" size="sm" onClick={() => {}} disabled={currentStepIndex < 2 || !teamId}>
+                <Button variant="link" size="sm" onClick={() => { }} disabled={currentStepIndex < 2 || !teamId}>
                     Escouade
                 </Button>
             </div>
@@ -228,32 +229,32 @@ export default function TeamSelectionPage() {
     }
 
     return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b shrink-0 bg-background/90 backdrop-blur-sm sm:px-6">
-        <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/20 text-primary">
-              <Bot className="w-6 h-6" />
-            </div>
-          <h1 className="text-xl font-bold md:text-2xl font-headline text-primary-foreground">
-            Strategic Squads
-            <span className="hidden ml-3 text-sm font-medium sm:inline-block text-muted-foreground">
-              Préparation du Joueur
-            </span>
-          </h1>
+        <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b shrink-0 bg-background/90 backdrop-blur-sm sm:px-6">
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/20 text-primary">
+                        <Bot className="w-6 h-6" />
+                    </div>
+                    <h1 className="text-xl font-bold md:text-2xl font-headline text-primary-foreground">
+                        Strategic Squads
+                        <span className="hidden ml-3 text-sm font-medium sm:inline-block text-muted-foreground">
+                            Préparation du Joueur
+                        </span>
+                    </h1>
+                </div>
+                <Button asChild variant="outline">
+                    <Link href="/lobby">
+                        <ArrowLeft className="mr-2" />
+                        Retour au Salon
+                    </Link>
+                </Button>
+            </header>
+            <main className="relative flex items-center flex-1 p-4 md:p-6 lg:p-8">
+                {step !== 'pseudo' && breadcrumbs()}
+                <div className="w-full">
+                    {renderStep()}
+                </div>
+            </main>
         </div>
-         <Button asChild variant="outline">
-          <Link href="/lobby">
-            <ArrowLeft className="mr-2" />
-            Retour au Salon
-          </Link>
-        </Button>
-      </header>
-      <main className="relative flex items-center flex-1 p-4 md:p-6 lg:p-8">
-        {step !== 'pseudo' && breadcrumbs()}
-        <div className="w-full">
-            {renderStep()}
-        </div>
-      </main>
-    </div>
     );
 }

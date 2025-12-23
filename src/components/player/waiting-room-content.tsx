@@ -2,7 +2,7 @@
 'use client'
 
 import { useSearchParams, useRouter } from "next/navigation"
-import { useEffect, useState, useRef } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -12,20 +12,21 @@ import type { Unit, Team } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { HEROES_DATA } from "@/lib/heroes"
 import { ArmoredIcon, AssassinIcon, MageIcon, ValkyrieIcon, ArcherIcon } from './unit-icons';
+import { useGameWebSocket } from "@/hooks/use-game-websocket";
 
 const classIcons: { [key: string]: React.ElementType } = {
-  Blindé: ArmoredIcon,
-  Mage: MageIcon,
-  Valkyrie: ValkyrieIcon,
-  Archer: ArcherIcon,
-  Assassin: AssassinIcon,
+    Blindé: ArmoredIcon,
+    Mage: MageIcon,
+    Valkyrie: ValkyrieIcon,
+    Archer: ArcherIcon,
+    Assassin: AssassinIcon,
 };
 
 const compositionIcons: { [key in Unit['composition']]: React.ReactNode } = {
-  attaque: <Swords className="w-4 h-4" />,
-  défense: <Shield className="w-4 h-4" />,
-  capture: <Crosshair className="w-4 h-4" />,
-  escarmouche: <Wind className="w-4 h-4" />,
+    attaque: <Swords className="w-4 h-4" />,
+    défense: <Shield className="w-4 h-4" />,
+    capture: <Crosshair className="w-4 h-4" />,
+    escarmouche: <Wind className="w-4 h-4" />,
 };
 
 type PlayerSquad = {
@@ -35,19 +36,19 @@ type PlayerSquad = {
 }
 
 const PlayerCard = ({ player, team, isCurrentUser }: { player: PlayerSquad, team: Team, isCurrentUser: boolean }) => {
-    
+
     const UnitDisplay = ({ unit }: { unit: Unit }) => {
         const hero = HEROES_DATA.find(h => h.id === unit.heroId);
         const Icon = hero ? classIcons[hero.class] : null;
 
         return (
-             <div className="flex items-center gap-4 p-2 rounded-md bg-muted/30">
+            <div className="flex items-center gap-4 p-2 rounded-md bg-muted/30">
                 <div className="relative">
                     <Avatar className="w-10 h-10">
                         <AvatarImage src={`https://api.dicebear.com/8.x/bottts/svg?seed=${unit.heroId}`} alt={unit.name} />
                         <AvatarFallback>{unit.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                     {Icon && (
+                    {Icon && (
                         <div className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 border rounded-full bg-muted border-background">
                             <Icon className="w-2 h-2 text-muted-foreground" />
                         </div>
@@ -63,8 +64,8 @@ const PlayerCard = ({ player, team, isCurrentUser }: { player: PlayerSquad, team
 
     return (
         <Card className={cn(
-        "overflow-hidden transition-all duration-300",
-        isCurrentUser ? "border-primary shadow-lg" : "bg-card/60 hover:shadow-md"
+            "overflow-hidden transition-all duration-300",
+            isCurrentUser ? "border-primary shadow-lg" : "bg-card/60 hover:shadow-md"
         )}>
             <CardHeader className={cn("p-4", team.bgClass, team.textClass)}>
                 <div className="flex items-center justify-between">
@@ -88,48 +89,20 @@ const PlayerCard = ({ player, team, isCurrentUser }: { player: PlayerSquad, team
     );
 }
 
+
 export default function WaitingRoomContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const pseudo = searchParams.get('pseudo');
 
-    const [units, setUnits] = useState<Unit[]>([]);
-    const [teams, setTeams] = useState<{ [key: string]: Team }>({});
-    const ws = useRef<WebSocket | null>(null);
-
-    useEffect(() => {
-        if (!ws.current) {
-            const wsUrl = `ws://${window.location.hostname}:8080`;
-            console.log(`Connecting to WebSocket at ${wsUrl}`);
-            const webSocket = new WebSocket(wsUrl);
-            ws.current = webSocket;
-
-            webSocket.onopen = () => console.log('WaitingRoom WebSocket connected');
-
-            webSocket.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                if (message.type === 'full-state' || message.type === 'update-state') {
-                    setUnits(message.payload.units);
-                    setTeams(message.payload.teams);
-                } else if (message.type === 'game-started') {
-                    // All clients will navigate upon receiving this message
-                    const params = new URLSearchParams(window.location.search);
-                    router.push(`/player/game?${params.toString()}`);
-                }
-            };
-
-            webSocket.onclose = () => console.log('WaitingRoom WebSocket disconnected');
-            webSocket.onerror = (error) => console.error('WaitingRoom WebSocket error:', error);
+    const { gameState, isConnected, sendMessage } = useGameWebSocket({
+        onGameStart: () => {
+            const params = new URLSearchParams(window.location.search);
+            router.push(`/player/game?${params.toString()}`);
         }
+    });
 
-        return () => {
-            // Only close the connection when the component unmounts
-            if (ws.current && (ws.current.readyState === WebSocket.OPEN || ws.current.readyState === WebSocket.CONNECTING)) {
-                ws.current.close(); 
-            }
-        };
-    }, [router]); 
-
+    const { units, teams } = gameState;
 
     const getSquadsByTeam = (teamId: 'blue' | 'red'): PlayerSquad[] => {
         const teamUnits = units.filter(u => u.teamId === teamId);
@@ -162,9 +135,7 @@ export default function WaitingRoomContent() {
     const canStartGame = blueSquads.length > 0 && redSquads.length > 0;
 
     const handleStartGame = () => {
-        if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({ type: 'startGame' }));
-        }
+        sendMessage({ type: 'startGame' });
     }
 
     return (
@@ -184,12 +155,12 @@ export default function WaitingRoomContent() {
                             <Play className="mr-2" />
                             (Dev) Démarrer la partie
                         </Button>
-                         {!canStartGame && (
+                        {!canStartGame && (
                             <div className="flex items-center gap-2 text-sm text-amber-500">
                                 <Loader2 className="animate-spin" />
                                 <span>En attente d'un joueur dans chaque équipe...</span>
                             </div>
-                         )}
+                        )}
                     </CardContent>
                 </Card>
 
@@ -197,41 +168,41 @@ export default function WaitingRoomContent() {
                     {/* Blue Team Column */}
                     <div className="space-y-6">
                         <div className="flex items-center justify-center gap-4">
-                            <Users className="w-8 h-8" style={{ color: blueTeam.color }}/>
+                            <Users className="w-8 h-8" style={{ color: blueTeam.color }} />
                             <h2 className="text-2xl font-bold text-center font-headline" style={{ color: blueTeam.color }}>
                                 {blueTeam.name} ({blueSquads.length}/5)
                             </h2>
                         </div>
-                         {blueSquads.length > 0 ? (
+                        {blueSquads.length > 0 ? (
                             blueSquads.map(player => (
-                               <PlayerCard
-                                 key={player.playerId}
-                                 player={player}
-                                 team={blueTeam as Team}
-                                 isCurrentUser={player.playerId === pseudo}
-                               />
+                                <PlayerCard
+                                    key={player.playerId}
+                                    player={player}
+                                    team={blueTeam as Team}
+                                    isCurrentUser={player.playerId === pseudo}
+                                />
                             ))
                         ) : (
-                             <p className="text-center text-muted-foreground">En attente de joueurs...</p>
+                            <p className="text-center text-muted-foreground">En attente de joueurs...</p>
                         )}
                     </div>
 
                     {/* Red Team Column */}
                     <div className="space-y-6">
                         <div className="flex items-center justify-center gap-4">
-                            <Users className="w-8 h-8" style={{ color: redTeam.color }}/>
+                            <Users className="w-8 h-8" style={{ color: redTeam.color }} />
                             <h2 className="text-2xl font-bold text-center font-headline" style={{ color: redTeam.color }}>
                                 {redTeam.name} ({redSquads.length}/5)
                             </h2>
                         </div>
                         {redSquads.length > 0 ? (
                             redSquads.map(player => (
-                               <PlayerCard
-                                key={player.playerId}
-                                player={player}
-                                team={redTeam as Team}
-                                isCurrentUser={player.playerId === pseudo}
-                               />
+                                <PlayerCard
+                                    key={player.playerId}
+                                    player={player}
+                                    team={redTeam as Team}
+                                    isCurrentUser={player.playerId === pseudo}
+                                />
                             ))
                         ) : (
                             <p className="text-center text-muted-foreground">En attente de joueurs...</p>

@@ -32,27 +32,39 @@
   }
 
   .dark {
-    --background: 180 11% 17%;
+    /* Background: Dark Grayish-Teal (#263232) -> HSL(180, 14%, 17%) */
+    --background: 180 14% 17%;
     --foreground: 210 40% 98%;
-    --card: 180 11% 20%;
+
+    --card: 180 14% 20%;
     --card-foreground: 210 40% 98%;
-    --popover: 180 11% 15%;
+
+    --popover: 180 14% 15%;
     --popover-foreground: 210 40% 98%;
-    --primary: 180 100% 30%;
+
+    /* Primary: Deep Teal (#008080) -> HSL(180, 100%, 25%) */
+    --primary: 180 100% 25%;
     --primary-foreground: 180 100% 98%;
+
     --secondary: 180 10% 25%;
     --secondary-foreground: 210 40% 98%;
+
     --muted: 180 10% 25%;
-    --muted-foreground: 180 5% 55%;
+    --muted-foreground: 180 5% 60%;
+
+    /* Accent: Bright Yellow-Orange (#FF8F00) -> HSL(34, 100%, 50%) */
     --accent: 34 100% 50%;
     --accent-foreground: 34 100% 10%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
+
     --border: 180 10% 25%;
     --input: 180 10% 25%;
     --ring: 34 100% 50%;
-    --chart-1: 180 100% 30%;
-    --chart-2: 0 72% 51%;
+
+    --chart-1: 180 100% 25%;
+    --chart-2: 34 100% 50%;
     --chart-3: 210 40% 98%;
     --chart-4: 180 10% 25%;
     --chart-5: 180 5% 55%;
